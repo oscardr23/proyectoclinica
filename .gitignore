@@ -1,0 +1,9 @@
+backend/.venv/
+backend/db.sqlite3
+web/node_modules/
+web/dist/
+mobile/.gradle/
+mobile/app/build/
+__pycache__/
+*.pyc
+

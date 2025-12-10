@@ -1,0 +1,7 @@
+<resources xmlns:tools="http://schemas.android.com/tools">
+    <style name="Theme.DentConnectPatient" parent="android:Theme.Material.Light.NoActionBar">
+        <!-- Customize as needed -->
+        <item name="android:statusBarColor">@android:color/transparent</item>
+    </style>
+</resources>
+

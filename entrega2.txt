@@ -1,0 +1,2823 @@
+Sistema
+
+de
+
+Gestión de Citas
+para Clínica Dental
+
+​
+
+DentConnect S.L.
+
+​
+
+​
+
+1º ENTREGA del PROYECTO de ÓSCAR DÍAZ RODRÍGUEZ
+
+Índice
+1. Introducción​
+2. Estado del Arte​
+3. Objetivos​
+Objetivos Generales​
+4. Diagrama de Casos de Uso​
+5. Prototipado​
+6. Diseño BBDD (PostgreSQL)​
+6.1. Análisis de requisitos de la BBDD​
+6.1.a) Ventajas y limitaciones de PostgreSQL​
+6.2. Diseño conceptual (Modelo Entidad-Relación)​
+6.3. Diseño lógico (Modelo Relacional)​
+7. Desarrollo de Perfiles de Usuario/Roles​
+7.1. Perfiles de Usuario del Sistema​
+7.2. Funcionalidades y Permisos por Rol​
+7.2.1. Perfil: Paciente​
+7.2.2. Perfil: Profesional​
+7.2.3. Perfil: Administrador​
+7.3. Matriz de Permisos​
+7.4. Implementación de Control de Acceso​
+8. Desarrollo de Concurrencia en la Aplicación​
+8.1. Problemas de Concurrencia Identificados​
+8.2. Estrategias de Gestión de Concurrencia​
+8.2.1. Transacciones de Base de Datos​
+8.2.2. Bloqueos Optimistas​
+8.2.3. Bloqueos Pesimistas​
+8.2.4. Validación de Integridad en Base de Datos​
+8.2.5. Cola de Procesamiento (Queue)​
+8.3. Casos de Uso Específicos de Concurrencia​
+8.3.1. Reserva de Cita por Múltiples Usuarios​
+8.3.2. Modificación Simultánea de una Cita​
+8.3.3. Asignación de Recursos (Salas y Equipos)​
+8.3.4. Actualización del Historial Clínico​
+8.4. Manejo de Errores y Retroalimentación al Usuario​
+8.5. Optimización y Rendimiento​
+9. Desarrollo Empresarial (EIE / FOL)​
+9.1. Presentación del proyecto y del emprendedor​
+9.2. La idea de negocio​
+9.3. El mercado y los clientes​
+9.4. El entorno y la competencia​
+9.5. El Marketing​
+9.6. Recursos Humanos​
+Óscar Díaz Rodríguez
+
+3
+4
+5
+5
+6
+7
+12
+12
+12
+13
+13
+14
+14
+14
+14
+15
+16
+18
+18
+18
+18
+19
+19
+19
+20
+20
+20
+20
+20
+21
+21
+21
+22
+22
+22
+22
+25
+26
+26
+33
+34
+1
+
+9.6.a) Organigrama​
+9.6.b) Diseños de puestos y selección de personal​
+9.6.c) Plan de motivación laboral​
+9.6.d) Contratación y coste de los trabajadores​
+9.6.e) Organización de la prevención​
+9.7. Forma Jurídica​
+9.8. Plan de Producción​
+9.8.a) Plan de producción​
+9.8.b) Proveedores​
+9.9. Impuestos​
+9.9.a) Análisis de costes​
+9.9.b) Inversiones y gastos iniciales​
+9.9.c) Plan de financiación​
+9.10. Plan de puesta en marcha​
+9.10.a) Trámites de constitución​
+9.10.b) Trámites comunes de puesta en marcha​
+10. Bibliografía​
+ANEXOS:​
+
+Óscar Díaz Rodríguez
+
+34
+35
+35
+36
+36
+36
+37
+37
+37
+38
+38
+39
+40
+41
+41
+42
+43
+43
+
+2
+
+1. Introducción
+En el sector dental actual, la gestión eficiente de citas y pacientes se ha vuelto fundamental para el
+éxito de cualquier clínica. Los métodos tradicionales basados en agendas físicas y llamadas
+telefónicas resultan ineficientes y propensos a errores, especialmente cuando se trata de coordinar
+múltiples profesionales, salas de tratamiento y recursos especializados.
+Este proyecto surge de la necesidad real de modernizar la gestión de una clínica dental, donde
+actualmente se manejan las citas de forma manual, lo que genera conflictos de horarios, pérdida de
+información de pacientes y una experiencia poco satisfactoria tanto para el personal como para los
+pacientes.
+La digitalización de este proceso no solo mejorará la eficiencia operativa, sino que también permitirá
+un mejor seguimiento de tratamientos, historiales clínicos más completos y una optimización de la
+comunicación interna y externa.
+
+Óscar Díaz Rodríguez
+
+3
+
+2. Estado del Arte
+La gestión de clínicas dentales ha evolucionado significativamente desde los sistemas manuales. El
+Estado del Arte actual se puede dividir en tres categorías principales:
+●​ Sistemas Tradicionales (Offline): Incluyen el uso de agendas físicas, hojas de cálculo (Excel) o
+software de escritorio antiguo (instalado localmente).
+○​ Problemas: No permiten el acceso remoto, carecen de integración con el paciente, la
+gestión de copias de seguridad es manual y son propensos a errores humanos en la
+duplicidad de citas o pérdida de datos.
+●​ Plataformas Generalistas de Citas (Marketplaces): Son plataformas web donde los pacientes
+buscan profesionales por especialidad y ubicación.
+○​ Ejemplos: Doctoralia, TopDoctors.
+○​ Análisis: Su principal fortaleza es la captación de nuevos pacientes; actúan como un
+escaparate. Sin embargo, su módulo de gestión de clínica (agenda, historial) suele
+ser una funcionalidad secundaria, menos potente y no está diseñado para una
+gestión interna profunda de recursos, facturación o historiales clínicos odontológicos
+complejos.
+●​ Software
+
+Vertical
+
+Especializado
+
+(SaaS
+
+y
+
+Escritorio): Son programas diseñados
+
+específicamente para la gestión integral de clínicas dentales.
+○​ Ejemplos: Clinic-Cloud (SaaS), Gesden (Escritorio/Cloud Híbrido), Nemodent
+(Escritorio).
+○​ Análisis: Son soluciones muy potentes y completas. Gesden es un estándar en
+España, pero tradicionalmente ha sido un software de escritorio con un coste de
+licencia inicial elevado y una interfaz menos moderna. Clinic-Cloud es un SaaS
+moderno y muy completo, pero su enfoque puede ser abrumador para clínicas muy
+pequeñas y su app de paciente es un portal web adaptado, no una app nativa.
+Justificación del Proyecto: El análisis del estado del arte revela un nicho de mercado: las clínicas
+pequeñas (1-3 profesionales) que consideran los sistemas tradicionales obsoletos, pero ven las
+soluciones especializadas como Gesden o Clinic-Cloud demasiado complejas o costosas para sus
+necesidades. Además, la experiencia del paciente suele relegarse a portales web.
+
+Óscar Díaz Rodríguez
+
+4
+
+3. Objetivos
+Objetivos Generales
+El presente apartado establece los objetivos generales del proyecto y los objetivos específicos
+relacionados con las diferentes asignaturas del ciclo formativo de Desarrollo de Aplicaciones
+Multiplataforma. Estos objetivos definen qué se pretende conseguir con el desarrollo del sistema y
+cómo se integran las competencias adquiridas en cada módulo profesional del título.
+Los objetivos principales del sistema son:
+●​ Se automatizará la gestión de citas para eliminar conflictos y optimizar recursos
+(profesionales, salas).
+●​ Se digitalizarán las fichas de pacientes para un historial clínico completo, seguro y accesible.
+●​ Se mejorará la comunicación con los pacientes mediante notificaciones y recordatorios
+automáticos (Email/SMS).
+●​ Se facilitará el acceso de los pacientes a su información (citas, historial) a través de una app
+móvil nativa.
+●​ Se optimizará la facturación y el control de servicios prestados a través de un módulo de
+gestión.
+
+Objetivos Específicos
+●​ ​Se diseñará y desarrollará un modelo de base de datos relacional en PostgreSQL que
+almacene de forma normalizada los datos de pacientes, profesionales, citas, salas, facturas y
+usuarios.
+●​ Se desarrollará una API REST utilizando Django como framework backend para gestionar las
+peticiones del frontend web y de la app móvil.
+●​ Se diseñará la estructura de la interfaz web utilizando HTML5 semántico y accesible.
+●​ Se desarrollará una aplicación web responsive utilizando Angular como framework frontend,
+aplicando principios de diseño de interfaces.
+●​ Se implementará una aplicación móvil nativa Android que permita a los pacientes gestionar
+citas, historiales y notificaciones push de forma segura.
+●​ Se especificarán los perfiles de usuario (paciente, profesional, administrador) junto con sus
+lujos de acceso, restricciones de seguridad y requisitos de usabilidad en cada canal.
+
+Óscar Díaz Rodríguez
+
+5
+
+●​ Se implementarán mecanismos de concurrencia y control de acceso a recursos
+(transacciones, bloqueos e índices únicos) para que las reservas y modificaciones se
+mantengan consistentes.
+●​ Se diseñarán mecanismos de acceso a datos eficientes (ORM, consultas parametrizadas,
+paginación y copias de seguridad) que aseguren integridad, rendimiento y recuperación ante
+fallos.
+●​ Se documentarán los entornos de desarrollo, pruebas y producción, incluyendo
+automatización CI/CD, despliegues de contenedores y planes legales/PRL necesarios para la
+operación SaaS.
+
+4. Diagrama de Casos de Uso
+En este apartado se describe los casos de uso del sistema, identificando los actores que
+interactúan con él y las funcionalidades que cada uno puede realizar. Los casos de uso definen el
+comportamiento del sistema desde la perspectiva del usuario y sirven como base para el diseño y
+desarrollo.
+
+●​ Actores:
+○​ Paciente (Usuario de la App Android).
+○​ Personal de Clínica (Administrador/Profesional, Usuario de la App Web).
+●​ Casos de Uso (Paciente):
+○​ Login/Registro.
+○​ Consultar próximas citas.
+○​ Consultar historial de tratamientos (solo lectura).
+○​ Solicitar nueva cita (pendiente de aprobación).
+○​ Recibir notificaciones push de recordatorio/confirmación.
+
+Óscar Díaz Rodríguez
+
+6
+
+●​ Casos de Uso (Personal de Clínica):
+○​ Gestión de Agenda: Visualizar agenda centralizada, reservar cita, modificar cita,
+cancelar cita, aprobar cita solicitada por paciente.
+○​ Gestión de Pacientes: Gestionar fichas de pacientes (CRUD), consultar historial
+clínico, añadir presupuestos, adjuntar consentimientos.
+○​ Gestión de Recursos: Asignar salas y equipos a citas.
+○​ Gestión Empresarial: Gestionar catálogo de servicios y tarifas, generar facturación
+básica, consultar informes.
+○​ Comunicación: Enviar recordatorios (Email/SMS).
+
+5. Prototipado
+●​ Prototipo App Web (Angular):
+○​ Vista de Agenda/Calendario (Dashboard principal).
+○​ Vista de Ficha de Paciente (Historial, Datos, Presupuestos).
+
+​
+
+Óscar Díaz Rodríguez
+
+7
+
+Óscar Díaz Rodríguez
+
+8
+
+​
+
+Óscar Díaz Rodríguez
+
+9
+
+●​ Prototipo App Móvil (Android):
+○​ Pantalla de Próximas Citas (Home).
+
+Óscar Díaz Rodríguez
+
+10
+
+6. Diseño BBDD (PostgreSQL)
+El presente apartado describe el diseño de la base de datos del sistema, desde el análisis de
+requisitos hasta el modelo relacional final. La base de datos es fundamental para almacenar de
+forma segura y estructurada toda la información del sistema, permitiendo la gestión eficiente de
+pacientes, citas, profesionales, recursos y facturación.
+
+6.1. Análisis de requisitos de la BBDD
+La base de datos debe ser capaz de almacenar de forma segura y relacional:
+●​ Datos personales y de contacto de los pacientes.
+●​ Historiales clínicos digitales (tratamientos, notas, documentos adjuntos).
+●​ Datos de los profesionales (dentistas, higienistas), sus especialidades y horarios.
+●​ Agenda de citas, con su estado (pendiente, confirmada, cancelada).
+●​ Recursos de la clínica (salas, equipos) para evitar duplicidad de reservas.
+●​ Catálogo de tratamientos y tarifas.
+●​ Registros de facturación y presupuestos.
+●​ Credenciales de usuarios (pacientes y personal) para la autenticación.
+
+6.1.a) Ventajas y limitaciones de PostgreSQL
+Ventajas: Cumple con ACID de forma estricta, ofrece extensiones avanzadas útiles para historiales
+enriquecidos, soporta replicación lógica integrada, roles y cifrado TLS, lo que facilita el cumplimiento
+RGPD. Su planificador de consultas y los índices compuestos permiten mantener un rendimiento
+estable incluso con calendarios muy concurridos.​
+Limitaciones: Requiere mayor administración que motores más sencillos (MySQL) y su consumo de
+memoria puede crecer cuando se abusa de conexiones persistentes; también necesita estrategias de
+particionado o archivado cuando los historiales clínicos y adjuntos alcanzan millones de registros.
+Para mitigarlo se contemplan agrupadores de conexiones y políticas de retención basadas en
+antigüedad.
+
+Óscar Díaz Rodríguez
+
+11
+
+6.2. Diseño conceptual (Modelo Entidad-Relación)
+
+●​ Entidades principales: Pacientes, Profesionales, Citas, Salas, Facturas, Usuarios
+●​ Relaciones clave:
+○​ Usuarios (1) --- (1) Pacientes (autenticación app)
+○​ Usuarios (1) --- (1) Profesionales (autenticación web)
+○​ Pacientes (1) --- (N) Citas
+○​ Profesionales (1) --- (N) Citas
+○​ Salas (1) --- (1) Citas
+○​ Pacientes (1) --- (N) Facturas
+
+6.3. Diseño lógico (Modelo Relacional)
+El esquema separa autenticación (Usuarios) del dominio clínico (Pacientes y Profesionales)
+y utiliza la citas como nexo con salas y facturación para garantizar trazabilidad completa.
+●​ Usuarios (id_usuario (PK), email, password_hash, rol)
+●​ Pacientes (id_paciente (PK), id_usuario (FK), nombre, apellidos, telefono, dni, ...)
+●​ Profesionales (id_profesional (PK), id_usuario (FK), nombre, apellidos, especialidad,
+num_colegiado, ...)
+●​ Salas (id_sala (PK), nombre, descripcion_equipo)
+●​ Citas (id_cita (PK), id_paciente (FK), id_profesional (FK), id_sala (FK), fecha_hora_inicio,
+fecha_hora_fin, estado, notas)
+●​ Facturas (id_factura (PK), id_paciente (FK), fecha_emision, total, estado_pago)
+
+Óscar Díaz Rodríguez
+
+12
+
+7. Desarrollo de Perfiles de Usuario/Roles
+El sistema de gestión de citas para clínica dental implementa un modelo de control de acceso basado
+en roles (RBAC - Role-Based Access Control) que permite gestionar los permisos y funcionalidades
+disponibles para cada tipo de usuario. Este apartado describe los perfiles de usuario, sus
+funcionalidades y los permisos asociados a cada rol.
+
+7.1. Perfiles de Usuario del Sistema
+El sistema define tres perfiles principales de usuario:
+●​ Paciente: Usuario que utiliza la aplicación móvil Android para gestionar sus citas y consultar
+su información personal y clínica.
+●​ Profesional: Usuario interno de la clínica (dentista, higienista, etc.) que utiliza la aplicación
+web para gestionar la agenda, pacientes y recursos.
+●​ Administrador: Usuario con permisos completos del sistema, incluyendo gestión de usuarios,
+configuración del sistema y acceso a todas las funcionalidades.
+
+7.2. Funcionalidades y Permisos por Rol
+7.2.1. Perfil: Paciente
+Descripción: El perfil de paciente está diseñado para usuarios finales que necesitan gestionar sus
+citas y consultar su información clínica a través de la aplicación móvil.
+Funcionalidades disponibles:
+●​ Autenticación y gestión de cuenta:
+○​ Login/Registro: El paciente puede autenticarse en la aplicación móvil utilizando sus
+credenciales (email/username y contraseña).
+○​ Gestión de perfil: Puede consultar y modificar sus datos personales (nombre,
+apellidos, teléfono, dirección, email).
+○​ Cambio de contraseña: Puede cambiar su contraseña de acceso.
+●​ Gestión de citas:
+○​ Consultar próximas citas: Visualiza todas sus citas programadas, ordenadas por
+fecha, mostrando información como fecha, hora, profesional asignado, sala y tipo de
+tratamiento.
+○​ Consultar historial de citas: Accede a un listado de todas sus citas pasadas con
+información completa de cada una.
+○​ Solicitar nueva cita: Puede solicitar una nueva cita seleccionando fecha, hora y
+profesional disponible. La cita queda en estado "pendiente" hasta que el personal de
+la clínica la apruebe.
+○​ Cancelar cita propia: Puede cancelar sus propias citas con un tiempo mínimo de
+antelación (por ejemplo, 24 horas antes).​
+
+Óscar Díaz Rodríguez
+
+13
+
+●​ Historial clínico:
+○​ Consultar historial de tratamientos: Visualiza su historial clínico completo en modo
+solo lectura, donde se muestran todos los tratamientos realizados, fechas,
+profesionales que los atendieron y notas médicas.
+○​ Consultar presupuestos: Puede visualizar los presupuestos emitidos para sus
+tratamientos, con información de servicios, importes y estados (aceptado,
+pendiente, rechazado).
+●​ Notificaciones:
+○​ Recibir notificaciones push: Recibe notificaciones automáticas en su dispositivo
+móvil para recordarle citas próximas o confirmar cambios en sus citas (confirmación,
+cancelación, modificación).
+Permisos y restricciones:
+●​
+●​
+●​
+●​
+●​
+●​
+
+Solo puede acceder a su propia información (datos personales, citas, historial).
+No puede modificar su historial clínico (solo lectura).
+No puede acceder a información de otros pacientes.
+No puede gestionar la agenda de la clínica.
+No puede acceder a módulos de facturación o recursos.
+Las citas solicitadas requieren aprobación del personal de la clínica.
+
+7.2.2. Perfil: Profesional
+Descripción: El perfil de profesional está diseñado para el personal interno de la clínica (dentistas,
+higienistas, etc.) que gestiona el día a día de la clínica a través de la aplicación web.
+Funcionalidades disponibles:
+●​ Autenticación y gestión de cuenta:
+○​ Login: El profesional se autentica en la aplicación web utilizando sus credenciales.
+○​ Gestión de perfil: Puede consultar y modificar sus datos profesionales (nombre,
+apellidos, especialidad, número de colegiado, horarios de disponibilidad).
+●​ Gestión de Agenda:
+○​ Visualizar agenda centralizada: Accede a un calendario completo donde se visualizan
+todas las citas de la clínica, pudiendo filtrar por profesional, fecha o sala.
+○​ Reservar cita: Puede crear nuevas citas seleccionando paciente, profesional, sala,
+fecha, hora y tipo de tratamiento.
+○​ Modificar cita: Puede editar citas existentes (cambiar fecha, hora, profesional, sala,
+motivo).
+○​ Cancelar cita: Puede cancelar cualquier cita del sistema.
+○​ Aprobar cita solicitada por paciente: Puede aprobar o rechazar solicitudes de citas
+realizadas por pacientes a través de la app móvil.​
+​
+​
+​
+
+Óscar Díaz Rodríguez
+
+14
+
+●​ Gestión de Pacientes:
+○​ Gestionar fichas de pacientes (CRUD): Puede crear, consultar, editar y eliminar fichas
+de pacientes, incluyendo datos personales, contacto e información médica relevante
+(alergias, notas médicas).
+○​ Consultar historial clínico: Accede al historial clínico completo de cualquier paciente.
+○​ Añadir entradas al historial clínico: Puede añadir nuevas entradas al historial clínico
+de los pacientes, registrando tratamientos realizados, notas y documentos adjuntos.
+○​ Gestionar presupuestos: Puede crear, editar y gestionar presupuestos para
+pacientes, incluyendo servicios, tarifas e importes.
+○​ Adjuntar consentimientos: Puede adjuntar documentos como consentimientos
+informados y otros documentos relacionados con el paciente.
+●​ Gestión de Recursos:
+○​ Consultar salas y equipos: Puede visualizar las salas de tratamiento y equipos
+disponibles.
+○​ Asignar recursos a citas: Puede asignar salas y equipos específicos a las citas
+programadas.
+●​ Comunicación:
+○​ Enviar recordatorios: Puede enviar recordatorios de citas o comunicaciones
+personalizadas a los pacientes mediante email o SMS.
+Permisos y restricciones:
+●​
+●​
+●​
+●​
+●​
+●​
+●​
+
+Puede acceder a la información de todos los pacientes de la clínica.
+Puede gestionar todas las citas del sistema (crear, modificar, cancelar).
+Puede modificar y añadir información al historial clínico de los pacientes.
+No puede gestionar usuarios del sistema (crear, eliminar, cambiar roles).
+No puede acceder a módulos de configuración del sistema.
+No puede gestionar facturación (solo presupuestos).
+No puede eliminar datos históricos críticos (solo desactivar).
+
+7.2.3. Perfil: Administrador
+Descripción: El perfil de administrador tiene acceso completo al sistema y todas sus funcionalidades.
+Está diseñado para el gerente o responsable de la clínica que necesita gestionar la configuración del
+sistema y supervisar todas las operaciones.
+Funcionalidades disponibles:
+●​ Todas las funcionalidades del perfil Profesional: El administrador hereda todas las
+funcionalidades del perfil profesional, pudiendo gestionar agenda, pacientes, recursos y
+comunicación.​
+​
+​
+​
+​
+
+Óscar Díaz Rodríguez
+
+15
+
+●​ Gestión de Usuarios:
+○​ Crear usuarios: Puede crear nuevos usuarios del sistema (pacientes, profesionales,
+otros administradores).
+○​ Editar usuarios: Puede modificar los datos de cualquier usuario del sistema.
+○​ Eliminar usuarios: Puede eliminar usuarios del sistema (con restricciones de
+seguridad para evitar pérdida de datos históricos).
+○​ Gestionar roles: Puede asignar y cambiar los roles de los usuarios (paciente,
+profesional, administrador).
+○​ Activar/Desactivar usuarios: Puede activar o desactivar cuentas de usuario sin
+eliminarlas.
+●​ Gestión de Profesionales:
+○​ Crear profesionales: Puede registrar nuevos profesionales en el sistema.
+○​ Gestionar especialidades: Puede asignar y modificar las especialidades de los
+profesionales.
+○​ Gestionar horarios: Puede configurar los horarios de disponibilidad de cada
+profesional.
+●​ Gestión de Recursos:
+○​ Crear y gestionar salas: Puede crear nuevas salas de tratamiento, editar sus
+características y desactivarlas.
+○​ Gestionar equipos: Puede gestionar el inventario de equipos disponibles en la clínica.
+●​ Gestión Empresarial:
+○​ Gestionar catálogo de servicios: Puede crear, editar y eliminar servicios del catálogo,
+definiendo nombres, descripciones y tarifas.
+○​ Gestionar tarifas: Puede modificar los precios de los servicios ofrecidos.
+○​ Generar facturación: Puede crear facturas para los pacientes, vinculándolas a
+tratamientos realizados.
+○​ Consultar informes: Accede a informes completos sobre facturación, actividad de la
+clínica, citas realizadas, pacientes atendidos, etc.
+●​ Configuración del Sistema:
+○​ Configuración general: Puede modificar parámetros generales del sistema (horarios
+de la clínica, políticas de cancelación, etc.).
+○​ Gestión de notificaciones: Puede configurar los tipos de notificaciones que se envían
+automáticamente.
+○​ Gestión de seguridad: Puede configurar políticas de seguridad, contraseñas y
+autenticación.
+Permisos y restricciones:
+●​
+●​
+●​
+●​
+●​
+
+Acceso completo a todas las funcionalidades del sistema.
+Puede gestionar usuarios, roles y permisos.
+Puede acceder a todos los módulos, incluyendo configuración y administración.
+Puede generar informes completos y acceder a datos agregados del sistema.
+No puede eliminar datos históricos críticos sin confirmación adicional (protección contra
+eliminación accidental).
+
+Óscar Díaz Rodríguez
+
+16
+
+7.3. Matriz de Permisos
+- Autenticación y perfil: los tres roles pueden registrarse/iniciar sesión y mantener su información
+básica.​
+- Citas: el paciente solo crea/cancela las suyas (quedan pendientes hasta validación); profesional y
+administrador gestionan cualquier cita.​
+- Historial clínico: el paciente consulta únicamente su expediente; profesional y administrador
+consultan/actualizan los de todos los pacientes; el administrador además genera informes globales.​
+- Pacientes y recursos: el paciente no tiene acceso; el profesional realiza CRUD de pacientes y asigna
+salas/equipos; el administrador puede dar de alta/baja recursos e introducir cambios estructurales.​
+- Gestión empresarial: reservada al administrador (usuarios, roles, catálogo, tarifas, facturas,
+informes); el profesional solo trabaja con presupuestos y comunicaciones.​
+- Configuración del sistema: exclusiva del administrador (parámetros generales, seguridad,
+notificaciones).
+
+7.4. Implementación de Control de Acceso
+El control de acceso se implementa mediante:
+●​ Autenticación mediante tokens JWT (JSON Web Tokens): Cada usuario se autentica y recibe
+un token que contiene información sobre su rol y permisos.
+●​ Middleware de autorización: El backend valida los permisos del usuario antes de permitir el
+acceso a cada funcionalidad.
+●​ Filtrado de datos: Los usuarios solo pueden acceder a los datos que tienen permiso para ver
+(por ejemplo, los pacientes solo ven sus propias citas).
+●​ Validación en frontend: La aplicación web y móvil ocultan o deshabilitan funcionalidades
+según el rol del usuario autenticado.
+
+8. Desarrollo de Concurrencia en la Aplicación
+La concurrencia es un aspecto crítico en sistemas multi-usuario donde varios usuarios pueden
+acceder y modificar los mismos recursos simultáneamente. En el sistema de gestión de citas para
+clínica dental, la concurrencia debe gestionarse especialmente en operaciones críticas como la
+reserva de citas, donde múltiples usuarios (pacientes o profesionales) pueden intentar reservar la
+misma cita al mismo tiempo.
+
+8.1. Problemas de Concurrencia Identificados
+Los principales escenarios de concurrencia que pueden ocurrir en el sistema son:
+●​ Reserva simultánea de la misma cita: Múltiples usuarios (pacientes o profesionales) intentan
+reservar la misma fecha, hora, profesional y sala al mismo tiempo.
+
+Óscar Díaz Rodríguez
+
+17
+
+●​ Modificación simultánea de una cita: Varios usuarios intentan modificar la misma cita al
+mismo tiempo (por ejemplo, cambiar la hora o el profesional).
+●​ Cancelación simultánea: Un paciente y un profesional intentan cancelar la misma cita
+simultáneamente.
+●​ Actualización del historial clínico: Múltiples profesionales intentan añadir entradas al historial
+clínico del mismo paciente al mismo tiempo.
+●​ Asignación de recursos: Varios profesionales intentan asignar la misma sala o equipo a
+diferentes citas en el mismo horario.
+
+8.2. Estrategias de Gestión de Concurrencia
+8.2.1. Transacciones de Base de Datos
+Se utilizan transacciones de base de datos para garantizar la atomicidad de las operaciones críticas.
+Las transacciones aseguran que una operación se ejecuta completamente o no se ejecuta en
+absoluto, evitando estados inconsistentes.
+●​ Ejemplo: Al crear una nueva cita, se ejecuta una transacción que:
+○​ Verifica la disponibilidad del profesional en la fecha/hora solicitada.
+○​ Verifica la disponibilidad de la sala en la fecha/hora solicitada.
+○​ Crea el registro de la cita en la base de datos.
+○​ Si alguna verificación falla, la transacción se revierte completamente.
+
+8.2.2. Bloqueos Optimistas
+Se implementa un sistema de bloqueo optimista utilizando un campo de versión en las entidades
+críticas (citas, historial clínico). Cada vez que se modifica un registro, se incrementa su versión. Si dos
+usuarios intentan modificar el mismo registro simultáneamente, el segundo usuario detectará que la
+versión ha cambiado y recibirá un error, evitando sobrescribir los cambios del primer usuario.
+●​ Ejemplo: Al modificar una cita:
+○​ El sistema carga la cita con su versión actual (ej: versión 5).
+○​ El usuario modifica los datos y envía la actualización.
+○​ El sistema verifica que la versión en la base de datos sigue siendo 5.
+○​ Si la versión ha cambiado (ej: ahora es 6), significa que otro usuario la modificó
+primero, y se rechaza la actualización con un mensaje de error informativo.
+
+Óscar Díaz Rodríguez
+
+18
+
+8.2.3. Bloqueos Pesimistas
+Para operaciones críticas de reserva de citas, se implementa bloqueo pesimista que bloquea
+temporalmente el registro en la base de datos mientras se procesa la solicitud. Esto previene que
+otros usuarios puedan modificar o reservar el mismo recurso simultáneamente.
+●​ Ejemplo: Al reservar una cita:
+○​ El sistema bloquea el registro del profesional y la sala para la fecha/hora solicitada.
+○​ Verifica la disponibilidad.
+○​ Crea la cita.
+○​ Libera el bloqueo.
+○​ Durante el bloqueo, otras solicitudes para el mismo recurso y horario quedan en
+espera o reciben un mensaje de "recurso no disponible temporalmente".
+
+8.2.4. Validación de Integridad en Base de Datos
+Se implementan restricciones de integridad a nivel de base de datos para prevenir conflictos:
+●​ Restricciones UNIQUE: Se definen índices únicos compuestos que previenen la creación de
+citas duplicadas (por ejemplo, combinación de profesional, sala, fecha_hora_inicio).
+●​ Restricciones CHECK: Se validan reglas de negocio a nivel de base de datos (por ejemplo, que
+fecha_hora_fin sea posterior a fecha_hora_inicio).
+●​ Triggers: Se pueden implementar triggers que validen la disponibilidad antes de insertar o
+actualizar una cita.
+
+8.2.5. Cola de Procesamiento (Queue)
+Para operaciones que requieren procesamiento secuencial, se implementa una cola de
+procesamiento que gestiona las solicitudes de forma ordenada.
+●​ Ejemplo: Las solicitudes de citas de pacientes se procesan en orden de llegada, evitando que
+múltiples solicitudes simultáneas generen conflictos.
+
+8.3. Casos de Uso Específicos de Concurrencia
+8.3.1. Reserva de Cita por Múltiples Usuarios
+●​ Escenario: Dos pacientes intentan reservar la misma fecha, hora y profesional al mismo
+tiempo.
+●​ Solución implementada:
+○​ Se utiliza bloqueo pesimista en la combinación profesional-fecha_hora_inicio.
+○​ La primera solicitud que llega bloquea el recurso y procede con la reserva.
+○​ La segunda solicitud detecta que el recurso está bloqueado o ya está ocupado y
+recibe un mensaje de error: "La cita solicitada ya no está disponible. Por favor,
+seleccione otra fecha u hora."
+○​ Se recomienda al usuario refrescar la disponibilidad y seleccionar otra opción.
+Óscar Díaz Rodríguez
+
+19
+
+8.3.2. Modificación Simultánea de una Cita
+●​ Escenario: Un profesional intenta modificar una cita mientras el paciente intenta cancelarla.
+●​ Solución implementada:
+○​ Se utiliza bloqueo optimista con campo de versión.
+○​ Ambos usuarios cargan la cita con su versión actual.
+○​ El primero en guardar los cambios actualiza la versión.
+○​ El segundo usuario recibe un error indicando que la cita ha sido modificada por otro
+usuario y se le muestra la versión actualizada.
+○​ El usuario puede decidir si desea aplicar sus cambios sobre la versión actualizada o
+cancelar la operación.
+
+8.3.3. Asignación de Recursos (Salas y Equipos)
+●​ Escenario: Dos profesionales intentan asignar la misma sala a diferentes citas en el mismo
+horario.
+●​ Solución implementada:
+○​ Se valida la disponibilidad de la sala antes de asignarla.
+○​ Se utiliza una restricción UNIQUE en la base de datos que previene la asignación de
+la misma sala a múltiples citas en horarios solapados.
+○​ Si se detecta un conflicto, se rechaza la asignación y se informa al usuario que la sala
+no está disponible en ese horario.
+
+8.3.4. Actualización del Historial Clínico
+●​ Escenario: Múltiples profesionales añaden entradas al historial clínico del mismo paciente
+simultáneamente.
+●​ Solución implementada:
+○​ Las entradas del historial clínico son independientes (no se modifican, solo se
+añaden).
+○​ Cada entrada tiene su propia fecha y hora de creación.
+○​ No hay conflicto porque cada profesional crea su propia entrada.
+○​ El sistema ordena las entradas por fecha/hora para mostrar un historial cronológico
+coherente.
+
+Óscar Díaz Rodríguez
+
+20
+
+8.4. Manejo de Errores y Retroalimentación al Usuario
+Cuando se detecta un conflicto de concurrencia, el sistema proporciona retroalimentación clara al
+usuario:
+●​ Mensajes de error informativos: Se muestran mensajes específicos que explican qué ocurrió
+(ej: "La cita ha sido modificada por otro usuario. Por favor, recargue la información y vuelva a
+intentarlo.").
+●​ Recarga automática de datos: En algunos casos, el sistema recarga automáticamente los
+datos actualizados para que el usuario vea el estado más reciente.
+●​ Sugerencias de alternativas: Cuando una cita no está disponible, el sistema puede sugerir
+horarios alternativos cercanos.
+
+8.5. Optimización y Rendimiento
+Para minimizar los problemas de concurrencia y mejorar el rendimiento:
+●​ Índices de base de datos: Se crean índices apropiados en las columnas utilizadas para validar
+disponibilidad (profesional, sala, fecha_hora_inicio) para acelerar las consultas.
+●​ Caché de disponibilidad: Se puede implementar un sistema de caché que almacene
+temporalmente la disponibilidad de profesionales y salas, actualizándose cuando se crean o
+modifican citas.
+●​ Timeout de bloqueos: Los bloqueos tienen un tiempo máximo de duración para evitar que
+un bloqueo quede activo indefinidamente si hay un error.
+
+9. Desarrollo Empresarial (EIE / FOL)
+Este apartado analiza la viabilidad de comercializar el software desarrollado como una solución de
+negocio (SaaS - Software as a Service).
+
+9.1. Presentación del proyecto y del emprendedor
+a. Presentación del proyecto. El proyecto consiste en el desarrollo y comercialización de un "Sistema
+de Gestión de Citas para Clínica Dental" (SaaS). Esta solución integral busca modernizar clínicas
+pequeñas y medianas mediante una aplicación web para la gestión interna (agenda, pacientes,
+facturación) y una aplicación móvil nativa (Android) para que los pacientes gestionen sus citas y
+consulten su historial.​
+​
+
+Óscar Díaz Rodríguez
+
+21
+
+b. El emprendedor.
+●​ Actitudes:
+
+●​ Aptitudes: Técnico Superior en Desarrollo de Aplicaciones Multiplataforma (Real Decreto
+405/2023, de 29 de mayo):
+○​ Configurar y explotar sistemas informáticos, adaptando la configuración lógica a las
+necesidades de uso.
+○​ Aplicar técnicas específicas de programación en lenguajes estructurados y de cuarta
+generación.
+○​ Desarrollar aplicaciones multiplataforma con acceso a bases de datos utilizando
+lenguajes, librerías y herramientas adecuadas.
+○​ Gestionar bases de datos, evaluando su rendimiento y optimizando su configuración.
+○​ Establecer vías de comunicación seguras entre aplicaciones y servicios mediante el
+uso de componentes software.
+○​ Desarrollar interfaces gráficas de usuario interactivas con adecuada usabilidad.
+○​ Desarrollar aplicaciones para dispositivos móviles e inteligentes.
+○​ Integrar contenidos gráficos y componentes multimedia en aplicaciones.
+○​ Aplicar técnicas y procedimientos de seguridad en sistemas y aplicaciones.
+○​ Gestionar entornos de desarrollo y despliegue de aplicaciones.
+○​ Participar en la implantación y gestión de sistemas ERP-CRM.
+○​ Elaborar y mantener documentación técnica y de usuario.
+
+Óscar Díaz Rodríguez
+
+22
+
+○​ Realizar planes de pruebas y verificar el funcionamiento de componentes software.
+○​ Desplegar y distribuir aplicaciones en distintos ámbitos de implantación.ç
+●​ Competencias profesionales, personales y sociales (Art. 5 del Real Decreto): Deducción de
+capacidades requeridas por cada competencia:
+○​ Gestionar: Capacidad para planificar, organizar y coordinar recursos técnicos y
+humanos en proyectos de desarrollo de software, adaptando estrategias según
+necesidades del cliente y plazos establecidos.
+○​ Diseñar: Habilidad para crear arquitecturas de software, interfaces de usuario y
+estructuras de bases de datos, evaluando alternativas técnicas y proponiendo
+soluciones eficientes.
+○​ Desarrollar: Competencia para implementar código siguiendo buenas prácticas,
+estándares de calidad y principios de programación, utilizando frameworks y
+herramientas adecuadas al contexto del proyecto.
+○​ Diagnosticar: Capacidad para identificar y analizar problemas técnicos, errores en
+sistemas y aplicaciones, utilizando herramientas de depuración y técnicas de
+resolución de incidencias.
+○​ Resolver: Habilidad para proponer y ejecutar soluciones a problemas técnicos de
+forma autónoma, evaluando impacto y aplicando correcciones de manera eficiente.
+○​ Supervisar: Competencia para revisar código, documentación y procesos de
+desarrollo, asegurando cumplimiento de estándares de calidad y mejores prácticas.
+○​ Coordinar: Capacidad para trabajar en equipo, asignar tareas, sincronizar esfuerzos
+de desarrolladores y comunicar avances en proyectos multidisciplinares.
+○​ Asesorar: Habilidad para comunicar soluciones técnicas a perfiles no técnicos,
+traduciendo conceptos complejos y proporcionando recomendaciones informadas.
+○​ Trabajo
+
+en
+
+equipo:
+
+Competencia
+
+para colaborar eficazmente, compartir
+
+conocimiento, aceptar feedback y contribuir a un ambiente de trabajo productivo y
+respetuoso.
+○​ Orientado a resultados: Capacidad para mantener el foco en objetivos del proyecto,
+priorizar tareas críticas y entregar productos funcionales dentro de plazos acordados.
+○​ Polivalente: Habilidad para adaptarse a diferentes tecnologías, entornos de
+desarrollo y roles dentro de un proyecto, adquiriendo conocimientos nuevos según
+necesidad.
+○​ Comunicativo: Competencia para expresarse de forma clara y efectiva, tanto de
+forma escrita (documentación técnica) como oral (presentaciones, reuniones).
+
+Óscar Díaz Rodríguez
+
+23
+
+○​ Iniciativa: Capacidad para proponer mejoras, identificar oportunidades de
+optimización y actuar proactivamente sin esperar instrucciones constantes.
+○​ Autonomía: Competencia para trabajar de forma independiente, tomar decisiones
+técnicas informadas y gestionar el propio tiempo y responsabilidades.
+●​ Cualificaciones (Art.6 del Real Decreto): El título de Técnico Superior en Desarrollo de
+Aplicaciones Multiplataforma tiene como referencia en el Catálogo Nacional de
+Cualificaciones Profesionales:
+○​ Cualificación Profesional de Nivel 3: Desarrollo de aplicaciones multiplataforma
+(IFC003_3).
+○​ Cualificación Profesional de Nivel 3: Gestión de sistemas informáticos (IFC007_3) parcialmente.
+○​ Cualificación Profesional de Nivel 3: Desarrollo de aplicaciones con tecnologías web
+(IFC004_3) - parcialmente..
+
+9.2. La idea de negocio
+a. Redacción de la idea Crear una empresa de base tecnológica dedicada a ofrecer un software de
+gestión vertical para clínicas dentales. El servicio se basará en una suscripción mensual que dará
+acceso a la plataforma web de gestión (para la clínica) y a la app móvil (para sus pacientes),
+incluyendo mantenimiento, actualizaciones y soporte técnico.
+b. La propuesta de valor y objetivo
+●​ Propuesta de Valor: Ofrecer a clínicas pequeñas y medianas una herramienta todo en uno
+(gestión web + app de paciente) que es más fácil de usar, más económica que el software de
+escritorio tradicional, y que mejora radicalmente la experiencia y fidelización del paciente.
+●​ Objetivo: Convertirnos en la solución SaaS de referencia para clínicas dentales
+independientes (1-10 empleados) en el territorio nacional que buscan modernizarse sin una
+gran inversión inicial.
+
+Óscar Díaz Rodríguez
+
+24
+
+9.3. El mercado y los clientes
+a. Tipo de mercado Mercado B2B (Business-to-Business), enfocado en el nicho de software vertical
+para el sector sanitario (HealthTech).
+b. El segmento de mercado El target principal son clínicas dentales de tamaño pequeño y mediano
+(1-10 profesionales) en España, que actualmente utilizan métodos manuales (agenda de papel, Excel)
+o software de escritorio obsoleto sin conectividad en la nube ni portal de paciente.
+c. Estudio de mercado: El cliente es la clínica dental, no el paciente. La decisión de compra recae casi
+exclusivamente en el dentista principal o el gerente de la clínica.
+Estos clientes:
+●​ No suelen tener un perfil técnico avanzado.
+●​ Valoran la facilidad de uso y la rapidez por encima de tener un exceso de funcionalidades
+que no utilizan.
+●​ Son sensibles al precio, prefiriendo un modelo de suscripción a una gran inversión inicial.
+●​ Requieren un soporte técnico cercano y ágil para resolver dudas.
+●​ Su principal preocupación es la seguridad y privacidad de los datos médicos.
+
+9.4. El entorno y la competencia
+a. El entorno general (Macroentorno - PESTEL)
+●​ Factores políticos y legales: La normativa de Protección de Datos es el factor más crítico. El
+software debe garantizar la encriptación, el acceso por roles y la privacidad de los historiales
+médicos, siendo esto un requisito indispensable y no negociable.
+●​ Factores económicos: Las clínicas pequeñas buscan reducir costes fijos. Un modelo SaaS es
+mucho más atractivo que la compra de licencias de software de escritorio costosas y sus
+contratos de mantenimiento.
+●​ Factores socioculturales: Los pacientes se han acostumbrado a la autogestión digital.
+Demandan poder gestionar sus citas online 24/7, recibir recordatorios automáticos y tener
+acceso a su información, algo que la app móvil soluciona.
+●​ Factores tecnológicos: La alta penetración de smartphones hace viable la app de paciente. El
+auge del Cloud Computing permite ofrecer un servicio SaaS robusto sin necesidad de que la
+clínica invierta en servidores propios.
+Óscar Díaz Rodríguez
+
+25
+
+b. El entorno específico (Microentorno)
+●​ Clientes: Tienen un poder de negociación medio; aunque hay competencia, el coste de
+cambiar de un software de gestión (migración de datos) es alto, por lo que tienden a ser
+fieles si el servicio es bueno.
+●​ Competencia: La rivalidad es alta.
+●​ Producto: El valor añadido de este proyecto es la simplicidad y la app nativa. A diferencia de
+la competencia, no se busca ser el software con más funciones, sino el más fácil de usar y el
+que mejor experiencia da al paciente.
+●​ Proveedores: Son críticos para un modelo SaaS. Los proveedores clave son:
+○​ Proveedores de Hosting/Cloud (ej. DigitalOcean, AWS, Azure) para alojar la API y la
+BBDD.
+○​ APIs de servicios de Email/SMS (ej. Twilio, SendGrid) para los recordatorios.
+○​ Pasarelas de pago (ej. Stripe) para gestionar las suscripciones mensuales.
+c. La competencia
+●​ Competidores Directos (SaaS Dental): Clinic-Cloud, Klinikare. Son los más similares;
+compiten en funcionalidades y precio.
+●​ Competidores Indirectos (Software de Escritorio): Gesden, Nemodent. Requieren
+instalación, son más caros inicialmente y menos flexibles, pero tienen una cuota de mercado
+establecida.
+●​ Plataformas Generalistas (Marketplaces): Doctoralia. No compiten tanto en la gestión
+interna como en la captación de pacientes, pero ofrecen agendamiento online básico.
+
+Óscar Díaz Rodríguez
+
+26
+
+d. Análisis DAFO
+●​ Matriz DAFO (Borrador):
+
+Óscar Díaz Rodríguez
+
+27
+
+●​ Matriz CAME:
+
+Óscar Díaz Rodríguez
+
+28
+
+Óscar Díaz Rodríguez
+
+29
+
+Óscar Díaz Rodríguez
+
+30
+
+e. La localización de la empresa Se trata de una empresa 100% digital (online). La venta, el soporte y
+el desarrollo se realizarán de forma remota. La localización física inicial será la residencia del
+emprendedor para minimizar costes fijos (alquiler de oficina). La sede fiscal se establecerá en dicha
+residencia o en un coworking (para domiciliación fiscal).
+f. Misión, visión y valores.
+●​ Misión: Democratizar la digitalización en clínicas dentales pequeñas, proporcionando una
+herramienta sencilla que mejore su eficiencia y la relación con sus pacientes.
+●​ Visión: Ser la solución SaaS preferida por las clínicas dentales independientes en España,
+reconocidos por nuestra facilidad de uso y la excelente experiencia de paciente.
+●​ Valores: Simplicidad, Seguridad (de datos), Soporte cercano, Innovación (centrada en el
+usuario).
+g. Responsabilidad Social Corporativa (RSC).
+●​ Privacidad: Compromiso estricto y transparente con el cumplimiento de la RGPD y la
+seguridad de los datos médicos.
+●​ Medioambiental: Uso de proveedores de hosting (Cloud) comprometidos con el uso de
+energías renovables (Green Hosting).
+●​ Social: Ofrecer planes con descuentos significativos o gratuitos para ONGs y proyectos de
+odontología social sin ánimo de lucro
+
+Óscar Díaz Rodríguez
+
+31
+
+9.5. El Marketing
+Gracias al análisis DAFO/CAME se han identificado debilidades (marca nueva, recursos limitados) y
+oportunidades (digitalización acelerada de clínicas pequeñas). Las estrategias de marketing se
+alinean con la misión de ofrecer una solución sencilla, segura y con soporte cercano.
+a) Estrategias de promoción o posicionamiento
+●​ Publicidad en LinkedIn hipersegmentado hacia gerentes de clínicas dentales y asociaciones
+provinciales, optimizando presupuestos reducidos.
+●​ Marketing por correo electrónico personalizado tras eventos odontológicos y ferias,
+aprovechando clientes potenciales que ya han visto el producto.
+●​ Seminarios web mensuales (Zoom/Teams) con demostraciones de la agenda y la app móvil,
+reduciendo la barrera tecnológica y generando confianza.
+●​ Alianzas con distribuidores de material dental y consultores TIC sanitarios bajo comisión,
+apoyándose en relaciones existentes sin desplegar una red comercial propia.
+b) Estrategias de producto
+●​ Propuesta de valor: plataforma web Angular y app Android con agenda inteligente, control
+de recursos, historiales digitales, presupuestos y facturación ligera.
+●​ Diferenciales: sincronización en tiempo real, plantillas odontológicas específicas, control de
+salas/equipos para evitar colapsos y métricas automáticas (ocupación, ingresos, morosidad).
+●​ Imagen corporativa: De nombre DentConnect para liderar la digitalización del sector con una
+plataforma SaaS que garantiza la escalabilidad, la seguridad de los datos y la optimización de
+la gestión clínica a nivel empresarial.
+c) Estrategias de precio
+●​ Criterios: Análisis comparativo frente a Gesden y Clinic-Cloud, estructura de costes
+(infraestructura cloud, soporte, desarrollo), sensibilidad al precio de clínicas de 1‑10
+profesionales y fase de introducción.
+●​ Estrategia: precios de penetración con suscripción mensual sin permanencia, descuentos del
+15 % por pago anual y un mes gratis por recomendación.
+
+d) Estrategias de distribución
+Óscar Díaz Rodríguez
+
+32
+
+●​ Modelo digital directo con web propia complementado con socios prescriptores con
+comisión fija por alta.
+●​ Impacto: la distribución directa mantiene el control del proceso de incorporación y soporte y
+reduce costes; los partners actúan como multiplicadores locales sin necesidad de red
+comercial propia. No se requieren intermediarios logísticos al tratarse de un SaaS.
+e) Atención al cliente
+●​ Servicios postventa: Proceso de inicio guiado (videollamada + migración inicial gratuita hasta
+500 pacientes), mesa de ayuda multicanal (chat integrado, correo, WhatsApp Business) y
+soporte técnico con resolución de problemas.
+●​ Garantías: Satisfacción 60 días, copias de seguridad diarias, disponibilidad y plan de
+continuidad conforme al Reglamento General de Protección de Datos.
+●​ Fidelización: boletín mensual y roadmap público con feedback
+
+9.6. Recursos Humanos
+La planificación de personal se apoya en el Convenio Colectivo del Metal para la provincia de Cuenca
+(2020‑2024) y en los requisitos del módulo de FOL.
+
+9.6.a) Organigrama
+El promotor asume gerencia, dirección técnica y relación con clientes clave. El Profesional de Oficio
+de 1ª implanta y da soporte. Funciones comerciales y aseguramiento de calidad se cubren
+inicialmente
+
+mediante
+
+servicios
+
+Óscar Díaz Rodríguez
+
+externos hasta alcanzar más de 20 clínicas activas.
+
+33
+
+9.6.b) Diseños de puestos y selección de personal
+
+9.6.c) Plan de motivación laboral
+1. Semana de bienvenida con formación, entrega de credenciales y repaso de normas básicas de
+seguridad. ​
+2. Objetivos trimestrales claros que revisamos cada dos semanas para ver avances y ajustar
+prioridades.​
+3. Bolsa de 300 € al año para cursos (seguridad, experiencia de usuario, nube u otros temas que
+interesen).​
+4. Horario flexible y teletrabajo tres días de cada cinco.​
+5. Bonus anual de medio sueldo si mantenemos el servicio estable y los clientes satisfechos. ​
+6. Reunion semanal: cuatro horas al mes para proponer ideas nuevas y experimentar.
+
+Óscar Díaz Rodríguez
+
+34
+
+9.6.d) Contratación y coste de los trabajadores
+
+9.6.e) Organización de la prevención
+- Modalidad: asunción del empresario para la gestión básica de la PRL y contratación de un Servicio
+de Prevención Ajeno (SPA) para higiene industrial, vigilancia de la salud y ergonomía. ​
+- Requisitos: empresa <10 trabajadores, actividad riesgo bajo, promotor con curso PRL 60 h. ​
+- Procedimientos: evaluación inicial de riesgos, plan de emergencia remoto, entrega de EPIs
+(portátiles securizados, mochilas ergonómicas) y registro de formaciones en la nube. ​
+- Indicadores: revisión semestral de riesgos, informe anual del SPA, simulacro remoto de
+ciberseguridad y control de incidencias PRL en Jira Service Management.
+
+9.7. Forma Jurídica
+Tras analizar las diferentes formas jurídicas disponibles y comparar sus características, se ha optado
+por constituir una Sociedad de Responsabilidad Limitada (S.L.). Esta elección se fundamenta en la
+protección patrimonial, la imagen profesional ante clientes B2B y la adecuación a un proyecto
+tecnológico que gestiona datos sanitarios sensibles.
+
+Óscar Díaz Rodríguez
+
+35
+
+9.8. Plan de Producción
+9.8.a) Plan de producción
+El desarrollo del software DentConnect se realiza mediante metodología ágil (Scrum) en sprints de 2
+semanas. El proceso se divide en cuatro fases principales:​
+- Fase 1: Desarrollo del MVP con backend Django, frontend Angular y app móvil Android básica.​
+- Fase 2: Integración de notificaciones, módulo de facturación completo y sistema de informes.​
+- Fase 3: Implementación de seguridad avanzada, cumplimiento RGPD y pruebas con clínicas piloto.​
+- Fase 4: Lanzamiento en producción, soporte técnico activo y desarrollo de mejoras continuas.​
+El despliegue se realiza en tres entornos: desarrollo, staging y producción, con automatización
+mediante CI/CD. El control de calidad incluye testing unitario, de integración y con usuarios
+reales.
+
+9.8.b) Proveedores
+- Infraestructura cloud: Servidor VPS y base de datos PostgreSQL. Coste estimado: 50-80 €/mes.​
+- Comunicaciones: API SMS/Email para recordatorios de citas. Coste estimado: 20-40 €/mes.​
+- Pasarela de pago: Gestión de suscripciones mensuales de clientes. Coste: 1,4% + 0,25€ por
+transacción.​
+- Gestoría: Asesoría fiscal y laboral. Coste: 90 €/mes.​
+- Seguros: RC profesional + seguro cibernético. Coste: 40 €/mes.​
+- Herramientas desarrollo: Repositorio privado de código. Coste: 4 €/mes.​
+- Software: Licencias de desarrollo (IDEs, herramientas). Coste estimado: 30 €/mes.
+
+Óscar Díaz Rodríguez
+
+36
+
+9.9. Impuestos
+9.9.a) Análisis de costes
+El objetivo es comprender en qué se invierte el presupuesto anual y cómo esos gastos sostienen el
+servicio. Los costes se agrupan en tres bloques:​
+1. Costes fijos estructurales: Garantizan que la plataforma funcione a diario aunque todavía haya
+pocos clientes. Incluyen:​
+- Equipo humano principal (aprox. 50.000 € anuales) para mantener la aplicación, acompañar a las
+clínicas y resolver incidencias críticas.​
+- Infraestructura cloud (cerca de 3.000 € al año) con bases de datos gestionadas, servidores
+escalables y monitorización, lo que evita que la clínica tenga que adquirir hardware propio.​
+- Servicios de apoyo (gestoría, asesor legal, seguros, marketing y ferias). Aunque su peso es menor
+(alrededor de 3.500 €), son clave para cumplir normativas sanitarias y captar nuevos clientes.​
+En conjunto, este bloque ronda los 55.000 € anuales y aporta estabilidad operacional.​
+2. Costes variables operativos: Aumentan conforme crece la cartera de clínicas:​
+- Pasarelas de pago y comisiones bancarias: cada cuota mensual lleva un pequeño porcentaje (≈1,4
+%) y una tasa fija. Se controla firmando acuerdos con proveedores como Stripe.​
+- Comunicaciones con pacientes (SMS, push, correos): cuanto más activa sea la plataforma, más
+recordatorios se envían. Se estima unos 50 € mensuales con 15 clínicas activas.​
+- Almacenamiento clínico y copias de seguridad: la subida de radiografías o consentimientos añade
+unos céntimos por gigabyte, de modo que se reserva un fondo anual de 120 €.​
+Estos costes son flexibles; se revisan trimestralmente para garantizar que el margen por cliente siga
+siendo positivo.​
+3. Perspectiva temporal y viabilidad: El plan financiero prevé un crecimiento progresivo de 8 a 15
+clínicas en el primer año:​
+- Durante los primeros meses la inversión cubre el lanzamiento y las implantaciones piloto. Aunque
+el flujo de caja es negativo, se emplea capital inicial para cubrirlo.​
+- A partir del segundo semestre, con más clínicas facturando, los ingresos recurrentes comienzan a
+compensar la estructura fija. El punto de equilibrio se alcanza cuando unas 10 clínicas están activas
+de forma estable.​
+- Con la proyección de 78.000 € de ingresos anuales y unos costes totales de 59.500 €, se obtiene
+un margen operativo cercano al 24 %. Este margen se reinvierte en soporte premium y nuevas
+funciones.
+
+Óscar Díaz Rodríguez
+
+37
+
+9.9.b) Inversiones y gastos iniciales
+A continuación se detallan las inversiones en bienes necesarios para el desarrollo de la actividad y los
+gastos iniciales requeridos para poner en marcha la empresa.​
+
+Óscar Díaz Rodríguez
+
+38
+
+9.9.c) Plan de financiación
+A continuación se detallan las fuentes de financiación para cubrir las inversiones y gastos iniciales del
+proyecto.​
+
+Óscar Díaz Rodríguez
+
+39
+
+9.10. Plan de puesta en marcha
+Este plan describe los pasos legales y administrativos que permitirán que DentConnect Solutions S.L.
+inicie su actividad con plena seguridad jurídica y control documental.
+
+9.10.a) Trámites de constitución
+Las dos tablas siguientes recogen, paso a paso, los trámites y documentos exigidos para constituir
+DentConnect Solutions S.L. ante los organismos competentes.
+
+Óscar Díaz Rodríguez
+
+40
+
+9.10.b) Trámites comunes de puesta en marcha
+La factura y el cheque que acompañan al plan de puesta en marcha ilustran la documentación
+comercial mínima necesaria para registrar la primera venta y su cobro asociado.
+
+Óscar Díaz Rodríguez
+
+41
+
+10. Bibliografía
+- Convenio colectivo del sector del metal en Cuenca:
+https://www.convenioscolectivos.com/convenio-metal-cuenca/
+- Guía oficial PostgreSQL versión 16: https://www.postgresql.org/docs/
+- Curso profesional de frontend en Angular:
+https://open-bootcamp.com/cursos/angular
+- Referencia completa Django versión 5: https://docs.djangoproject.com/en/5.0/
+- Curso backend Django REST Framework (Platzi): https://platzi.com/cursos/django-rest/
+- Modelo de CV Europass para anexos: https://europa.eu/europass/es
+-Guía DAFO/CAME para pymes (IPYME):
+https://www.ipyme.org/es-ES/FinanciacionyApoyo/planempresa/Paginas/analisis-dafo.aspx
+
+ANEXOS:
+
+Óscar Díaz Rodríguez
+
+42
+
+Óscar Díaz Rodríguez
+Documento de identidad: 04655663A
+
+Permiso de trabajo: Española
+
+Lugar de nacimiento: Cuenca, España
+
+Nacionalidad: Española
+
+Fecha de nacimiento: 11/02/2005
+
+Número de teléfono: (+34) 722432016 (Móvil)
+
+Dirección de correo electrónico: oscardr861@gmail.com
+Dirección: La Melgosa, C/La Fuente 2, 16193, Cuenca, España (Domicilio)
+
+EDUCACIÓN Y FORMACIÓN
+14/09/2017 – 20/06/2021 Cuenca, España
+
+EDUCACIÓN SECUNDARIA OBLIGATORIA I.E.S San José
+Web https://iesanjose.es/
+
+Campo de estudio Educación sin mayor definición
+
+Nivel en el MEC Nivel 1 EQF-MEC
+
+14/09/2020 – 20/06/2021 Cuenca, España
+
+INGLÉS, CERTIFICADO DE NIVEL INTERMEDIO B1 Escuela de idiomas
+Web https://www.eoicuenca.com/
+Campo de estudio Programas y certificaciones genéricos no contemplados en la clasificación
+
+Nivel en el MEC Nivel 1 EQF-MEC
+
+14/09/2021 – 20/06/2023 Cuenca, España
+
+CICLO FORMATIVO DE GRADO MEDIO DE SISTEMAS MICROINFORMÁTICOS Y REDES Centro Integrado de
+Formación Profesional Nº1 de Cuenca
+Web https://www.cifpcuenca.es/
+Campo de estudio Diseño y administración de redes y bases de datos, Desarrollo y análisis de software y aplicaciones
+Nivel en el MEC Nivel 1 EQF-MEC
+14/09/2023 – 20/06/2025 Cuenca, España
+
+CICLO FORMATIVO DE GRADO SUPERIOR DE DISEÑO DE APLICACIONES MULTIPLATAFORMA Centro
+Integrado de Formación Profesional Nº1 de Cuenca
+Web https://www.cifpcuenca.es/
+Campo de estudio Uso de computadores, Diseño y administración de redes y bases de datos, Desarrollo y análisis de software y
+aplicaciones
+Nivel en el MEC Nivel 1 EQF-MEC
+
+EXPERIENCIA LABORAL
+ ÓSCAR DÍAZ RODRÍGUEZ – CUENCA, ESPAÑA
+
+TECNICO EN SISTEMAS INFORMATICOS – 20/03/2023 – 10/05/2023
+— Soporte web
+— Asistente web
+— Soporte al cliente
+ ÓSCAR DÍAZ RODRÍGUEZ – CUENCA, ESPAÑA
+
+TÉCNICO EN PROGRAMACIÓN INFORMÁTICA – 29/09/2025 – 14/12/2025
+— Desarrollo de aplicaciones web
+— Desarrollo de proyecto
+— Desarrollo de aplicaciones de escritorio
+ ÓSCAR DÍAZ RODRÍGUEZ – CUENCA, ESPAÑA
+
+COMERCIAL DE ELECTRODOMÉSTICOS – 14/07/2025 – 30/09/2025
+— Vendedor de electrodomésticos
+— Reponedor
+— Director y organizador de tienda
+
+COMPETENCIAS DE IDIOMAS
+Lengua(s) materna(s):
+
+ESPAÑOL
+
+Otro(s) idioma(s):
+COMPRENSIÓN
+
+EXPRESIÓN
+ESCRITA
+
+EXPRESIÓN ORAL
+
+Comprensión
+auditiva
+
+Comprensión
+lectora
+
+Producción oral
+
+Interacción oral
+
+INGLÉS
+
+B1
+
+B1
+
+B1
+
+B1
+
+B1
+
+FRANCÉS
+
+A2
+
+A2
+
+A2
+
+A2
+
+A2
+
+Niveles: A1 y A2 (usuario básico), B1 y B2 (usuario independiente), C1 y C2 (usuario competente)
+
+CAPACIDADES
+Buena capacidad de comunicacin y adaptacin a los cambios
+público Puntualidad y seriedad.
+mostrar compromiso
+
+promover el trabajo en equipo
+
+dirigirse a un
+
+Empresa:
+
+Trabajador:
+
+Profesional de Oficio de 1ª
+
+DentConnect S.L.
+Domicilio:
+
+NIF:
+
+C/Hermanos Becerril 19, 16004, Cuenca
+CIF:
+
+16/12345678/01
+
+Periodo de liquidación:
+
+del
+
+16/9876543210
+
+12345678Z
+
+CCC Seguridad Social:
+
+B16999999
+
+Nº Afiliación Seguridad Social:
+
+01/112025/
+
+al 30
+
+Categoría profesional:
+
+Grupo de
+cotización:
+
+Profesional de Oficio de 1ª
+
+Grupo 5
+
+de
+
+de 2025
+
+Noviembre
+
+I. DEVENGOS
+
+IMPORTE
+
+Total días:
+
+30
+
+TOTALES
+
+1. Percepciones salariales
+Salario base…………………………………………………………………………………………..……
+
+1,692.00 €
+
+Complementos salariales
+
+Calidad /Disponibilidad
+
+…………………………………………………………………
+
+80.00 €
+
+…………………………………………………………………
+…………………………………………………………………
+…………………………………………………………………
+Horas extraordinarias
+Voluntarias
+
+…………………………………………………………………
+
+Fuerza mayor
+
+…………………………………………………………………
+
+Horas complementarias
+
+(contratos a tiempo parcial)……..……….…………………………
+
+Gratificaciones extraordinarias……………………………………………………………………………
+Salario en especie…………………………………………………………………………………………
+2. Percepciones no salariales
+Indemnizaciones o suplidos
+……………………………………………………..………
+………………………………………………………………
+Prestaciones e indemnizaciones de la Seguridad Social
+………………………………………………………………
+Indemnizaciones por traslados, suspensiones o despidos
+………………………………………………………………
+Otras percepciones no salariales
+…………………………………………………………………
+( A ) TOTAL DEVENGADO:
+
+1,772.00 €
+
+II. DEDUCCIONES
+1. Aportaciones del trabajador a las cotizaciones de la Seguridad Social y conceptos de recaudación conjunta
+Contingencias comunes………………………
+
+1,772.00 €
+1,772.00 €
+Formación profesional…………...…………… 1,772.00 €
+Desempleo………………………………………
+Horas extraordinarias por fuerza mayor…
+Otras horas extraordinarias………………..
+
+4,70%
+
+…………………
+
+1,55%
+X 0,10%
+
+…………………
+
+X
+
+…………………
+
+X
+X
+
+…………………
+
+83.28 €
+27.47 €
+1.77 €
+
+…………………
+
+X
+
+Total aportaciones:
+2. Impuesto sobre la Renta de las Personas Físicas………………
+
+35.44 €
+
+2,00%
+
+3. Anticipos…………………………………………..………………………..…………………………
+4. Valor de los productos recibidos en especie……………………………………………………
+5. Otras deducciones……………………………………………………………………………………
+( B ) TOTAL A DEDUCIR:
+LÍQUIDO TOTAL A PERCIBIR ( A - B )
+Firma y sello de la empresa
+
+147.96 €
+
+1,624.04 €
+
+RECIBÍ
+
+DETERMINACIÓN DE LAS BASES DE COTIZACIÓN A LA SEGURIDAD SOCIAL Y CONCEPTOS DE RECAUDACIÓN CONJUNTA Y DE LA BASE SUJETA A
+RETENCIÓN DEL IRPF Y APORTACIÓN DE LA EMPRESA
+
+1. Base de cotización por contingencias comunes
+
+APORTACIÓN
+
+Remuneración mensual…………………………………
+
+1,772.00 €
+
+BASE
+
+TIPO
+
+Prorrata de pagas extraordinarias……………………..
+TOTAL:
+2. Base de cotización por contingencias profesionales y conceptos de recaudación conjunta
+AT y EP
+
+I.T ( 0,63%) + I.M.S (0,36%)
+
+Desempleo
+
+………………………………………………………………
+
+Formación profesional
+
+………………………………………………………………
+
+FOGASA
+
+………………………………………………………………
+
+3. Base de cotización adicional por horas extraordinarias
+
+5. Base sujeta a retención del IRPF
+
+1,772.00 €
+1,772.00 €
+1,772.00 €
+
+----------------------------------------
+
+4. Base de cotización adicional por horas extraordinarias por fuerza mayor
+
+----------------
+
+------------------------------------------------------------------------------
+
+23,60%
+
+1,772.00 €
+
+1,772.00 €
+
+1,772.00 €
+
+EMPRESA
+
+418.19 €
+26.58 €
+97.46 €
+10,63 €
+………….
+…………. 3.54 €
+
+X
+
+1,50%
+5,50%
+X 0,60%
+X 0,20%
+
+………….
+
+X
+
+………….
+
+X
+
+………….
+
+X
+
+………….
+TOTAL
+
+556.40 €
+
+CONTRATO DE TRABAJO INDEFINIDO
+DATOS DE LA EMPRESA
+CIF/NIF/NIE
+
+B16900001
+NIF/NIE
+
+D./DÑA.
+
+EN CONCEPTO (1)
+
+DentConnect S.L.
+
+04655663A
+
+NOMBRE O RAZÓN SOCIAL DE LA EMPRESA
+
+DOMICILIO SOCIAL
+
+Gerente
+
+C/ Hermanos Becerril 19
+PAÍS
+
+C. POSTAL
+
+MUNICIPIO
+
+España
+
+492
+
+Cuenca
+
+16004
+
+16 0 0 4
+
+DATOS DE LA CUENTA DE COTIZACIÓN
+RÉGIMEN
+
+CÓDIGO CUENTA COTIZACIÓN
+
+ACTIVIDAD ECONÓMICA
+
+0000 12345678901
+DATOS DEL CENTRO DE TRABAJO
+PAÍS
+
+MUNICIPIO
+
+España
+
+492
+
+Cuenca
+
+16004
+
+DATOS DEL/DE LA TRABAJADOR/A
+D./DÑA.
+
+NIF/NIE
+
+Gerard Vilar Gallego
+NIVEL FORMATIVO
+
+15/05/2002
+
+123456789012
+
+NACIONALIDAD
+
+Ciclo Formativo de Grado Superior
+
+España
+
+MUNICIPIO DEL DOMICILIO
+
+Gavá
+
+FECHA NACIMIENTO Nº AFILIACIÓN SEGURIDAD SOCIAL
+
+89455883K
+
+PAÍS DOMICILIO
+
+08850
+
+España
+
+492
+
+con la asistencia legal, en su caso, de D./Dña.........................................................................................................................................................................
+con NIF/NIE .......................... , en calidad de (2) ....................................................................................................................................................................
+
+DECLARAN
+Que reúnen los requisitos exigidos para la celebración del presente contrato y, en su consecuencia, acuerdan formalizarlo con arreglo a las siguientes:
+
+CLÁUSULAS
+
+Profesional de Oficio de 1ª
+PRIMERA: el/la trabajador/a prestará sus servicios como (3) ...............................................................................................................................................
+incluido en el grupo profesional de ..........................................................................................................................................................................................
+Personal obrero cualificado
+Gestión personalizada de Clínicas Dentales
+para la realización de las funciones (4) ...................................................................................................................................................................................
+de acuerdo con el sistema de clasiﬁcación profesional vigente en la empresa. En el centro de trabajo ubicado en (calle, nº y localidad)
+..................................................................................................................................................................................................................................................
+Cuenca, C/Hermanos Becerril 19
+SI
+
+Trabajo a distancia (5)
+
+SEGUNDA: el contrato se concierta para realizar trabajos ﬁjos-discontinuos de acuerdo con el artículo 16 del Estatuto de los Trabajadores (6)
+..................................................................................................................................................................................................................................................
+dentro de la actividad cíclica intermitente de (7) ......................................................................................................................................................................
+La duración estimada de la actividad será de (8) ....................................................................................................................................................................
+La jornada estimada dentro del período de actividad será de .................... horas (9) ............................................................................................................
+y la distribución horaria estimada será ....................................................................................................................................................................................
+Los/as trabajadores/as serán llamados/as en el orden y forma que se determine en el Convenio Colectivo de
+........................................................................................................................................................................................................... o acuerdo de empresa.
+
+MOD CIND CAS 09_2025
+
+Si el convenio colectivo de ámbito sectorial permite en los contratos ﬁjos-discontinuos utilizar la modalidad de tiempo parcial, indique si se acoge al
+mismo:
+SÍ
+NO
+
+(1)
+(2)
+(3)
+(4)
+
+Director/a, Gerente, etc.
+Padre, madre, tutor/a o persona o institución que le tenga a su cargo.
+Indicar la profesión, oﬁcio o puesto de trabajo a desempeñar.
+Las funciones pueden ser todas las del grupo profesional o solamente alguna de ellas.
+
+1
+
+.
+
+TERCERA: la jornada de trabajo será:
+
+40
+A tiempo completo: la jornada de trabajo será de ....................
+horas semanales, prestadas de ...................................
+, a ...................................
+,
+Viernes
+Lunes
+con los descansos establecidos legal o convencionalmente. (10).
+
+A tiempo parcial: la jornada de trabajo ordinaria será de .................... horas
+al día,
+a la semana,
+al mes,
+al año, siendo esta
+jornada inferior a la de un trabajador a tiempo completo comparable (11).
+12 meses (extendible hasta 24)
+La distribución del tiempo de trabajo será de (12) ................................................................................................................................................................
+,
+conforme a lo previsto en el convenio colectivo.
+En el caso de jornada a tiempo parcial señálese si existe o no pacto sobre la realización de horas complementarias (13):
+
+SÍ
+
+NO
+
+22/11/2025 y se establece un período de
+CUARTA: la duración del presente contrato será INDEFINIDA, iniciándose la relación laboral en fecha ..........................,
+1 mes
+prueba de (14) .........................................................................................................................................................................................................................
+21.264 €
+anual
+QUINTA: el/la trabajador/a percibirá una retribución total de .....................................................................
+euros brutos (15) ................................................
+Salario
+base y complemento
+que se distribuirán en los siguientes conceptos salariales (16) ...............................................................................................................................................
+SEXTA: complemento de apoyo al empleo para personas trabajadoras que están percibiendo prestaciones por desempleo (17).
+
+.
+
+La empresa tiene autorizado un expediente de regulación de empleo (18)
+SÍ
+NO.
+
+30 dias naturales
+SÉPTIMA: la duración de las vacaciones anuales será de (19) ..............................................................................................................................................
+OCTAVA: en lo no previsto en este contrato, se estará a la legislación vigente que resulte de aplicación y particularmente en el Estatuto de los
+Trabajadores y el Convenio Colectivo de
+Convenio del Metal de Cuenca
+..................................................................................................................................................................................................................................................
+NOVENA: el presente contrato se formaliza bajo la modalidad de contrato de relevo:
+
+SÍ
+
+.
+
+NO
+
+El/la trabajador/a:
+Que está en desempleo e inscrito/a como demandante en el Servicio Público de Empleo de .....................................................................................
+Que tiene concertado con la empresa un contrato de duración determinada que fue registrado en el Servicio Público de Empleo de
+................................................................................................., con el número .......................................... con fecha ...........................
+El/la representante de la empresa:
+
+MOD CIND CAS 09_2025
+
+Que el/la trabajador/a de la empresa, D/Dña. ..........................................................................................................., nacido el ........................., que presta
+sus servicios en el centro de trabajo ubicado en (calle, nº y localidad) ...................................................................................................................................
+con la profesión de ................................................................................................................................................................................., incluido en el grupo
+profesional ........................................................................................................................................................................... de acuerdo con el sistema
+de clasiﬁcación profesional vigente en la empresa que reduce su jornada ordinaria de trabajo y su salario en un ..........................(20) por acceder a
+la situación de jubilación parcial regulada por el artículo 215 del Real Decreto Legislativo 8/2015, de 30 de octubre, por el que se aprueba el texto
+refundido de la Ley General de la Seguridad Social ha suscrito con fecha .........................., y hasta ........................... el correspondiente contrato de
+trabajo a tiempo parcial registrado en el Servicio Público de Empleo de ...............................................................................................................................,
+con el número .......................................... con fecha ...........................
+
+(5) El trabajo a distancia se regula por lo dispuesto en la Ley 10/2021, de 9 de julio y requiere la ﬁrma del correspondiente acuerdo.
+(6) Esta cláusula solo se cumplimentará en caso de desarrollar trabajos de carácter ﬁjos discontinuos. Indicar la actividad profesional a desarrollar por el/la trabajador/a.
+(7) Indicar la actividad ﬁja discontinua o de temporada de la empresa y su duración.
+(8) Diarios, semanales, mensuales o anuales. Detallar Convenio.
+(9) Indique el número de horas según convenio colectivo para jornada completa, máximo legal o lo del trabajador a tiempo completo.
+(10) Indique la jornada del trabajador.
+(11) Se entenderá por «trabajador a tiempo completo comparable» a un trabajador a tiempo completo de la misma empresa y centro de trabajo con el mismo tipo de
+contrato de trabajo y que realice un trabajo idéntico o similar. Si en la empresa no hubiera ningún trabajador comparable a tiempo completo, se considerará la jornada a
+tiempo completo prevista en el convenio colectivo de aplicación, o, en su defecto, la jornada máxima legal.
+
+2
+
+DÉCIMA: ESTE CONTRATO PODRÁ SER COFINANCIADO POR EL FONDO SOCIAL EUROPEO PLUS.
+UNDÉCIMA: el contenido del presente contrato se comunicará al Servicio Público de Empleo de
+Servicio Público de Empleo de Castilla-La Mancha
+.................................................................................................................................................................................................................................................,
+en el plazo de los 10 días hábiles siguientes a su concertación.
+
+MOD CIND CAS 09_2025
+
+DUODÉCIMA: PROTECCIÓN DE DATOS. - Los datos consignados en el presente modelo tendrán la protección derivada del Reglamento (UE)
+2016/679 del Parlamento Europeo, de 27 de abril de 2016 y de la Ley Orgánica 3/2018, de 5 de diciembre.
+
+(12) Indique la distribución del tiempo de trabajo según el convenio colectivo.
+(13) Señálese lo que proceda y en caso aﬁrmativo adjunte el anexo si hay horas complementarias.
+(14) Respetando lo establecido en el artículo 14.1 del Estatuto de los Trabajadores.
+(15) Diarios, semanales, mensuales o anuales.
+(16) Salario base, complementos salariales, pluses.
+(17) Las personas trabajadoras que estén percibiendo subsidio por desempleo o prestación contributiva en las condiciones establecidas en la disposición adicional 59ª del
+Texto refundido de la Ley General de la Seguridad Social aprobado por el Real Decreto Legislativo 8/2015, de 30 de octubre, podrá acceder al complemento de apoyo
+al empleo.
+(18) No se podrá compatibilizar el subsidio o la prestación contributiva con el desempeño de un empleo por cuenta ajena cuando la contratación sea efectuada por
+empresas que tengan autorizado un expediente de regulación de empleo.
+(19) Mínimo: 30 días naturales.
+(20) Un mínimo del 25 % y un máximo del 75 %. En el supuesto de anticipación del acceso a la jubilación parcial en más de 2 años respecto a la edad ordinaria de
+jubilación, la reducción durante el primer año será entre un 20 % y un 33 %.
+
+3
+
+Que el CONTRATO INDEFINIDO que se celebra (marque la casilla que corresponda) se realiza con las siguientes cláusulas especíﬁcas:
+
+INDEFINIDO ORDINARIO . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 5
+PARA PERSONAS CON DISCAPACIDAD . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 6
+PARA PERSONAS CON CAPACIDAD INTELECTUAL LÍMITE . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 7
+PARA PERSONAS CON DISCAPACIDAD EN CENTROS ESPECIALES DE EMPLEO . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 8
+PARA PERSONAS TRABAJADORAS READMITIDAS TRAS HABER CESADO EN LA EMPRESA POR
+INCAPACIDAD PERMANENTE TOTAL O ABSOLUTA . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 9
+PARA PERSONAS DESEMPLEADAS DE LARGA DURACIÓN . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 10
+PARA PERSONAS TRABAJADORAS EN SITUACIÓN DE EXCLUSIÓN SOCIAL . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 11
+PARA MUJERES TRABAJADORAS VÍCTIMAS DE VIOLENCIA DE GÉNERO, VÍCTIMAS DE VIOLENCIAS
+SEXUALES, VÍCTIMAS DE TRATA DE SERES HUMANOS, TANTO CON FINES DE EXPLOTACIÓN SEXUAL
+COMO LABORAL Y MUJERES EN CONTEXTO DE PROSTITUCIÓN, O PERSONAS VÍCTIMAS DE TERRORISMO . . . . . . . . . . . . pág. 12
+PARA PERSONAS TRABAJADORAS EN SITUACIÓN DE EXCLUSIÓN SOCIAL EN EMPRESAS DE INSERCIÓN . . . . . . . . . . . . . . pág. 13
+PARA PERSONAS QUE REALIZAN FORMACIÓN PRÁCTICA EN EMPRESAS . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 14
+PARA PERSONAS PROCEDENTES DE UN CONTRATO FORMATIVO DE EMPRESAS DE TRABAJO TEMPORAL. . . . . . . . . . . . . pág. 15
+PARA PERSONAS TRABAJADORAS AL SERVICIO DEL HOGAR FAMILIAR . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 16
+CONVERSIÓN DE CONTRATO TEMPORAL EN INDEFINIDO. . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 17
+OTRAS SITUACIONES . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . . pág. 18
+
+MOD CIND CAS 09_2025
+
+y cumple los requisitos exigidos en la norma regulatoria.
+
+4
+
+INDEFINIDO ORDINARIO
+
+CÓDIGO DE CONTRATO
+1
+
+0
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+0
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+0
+
+0
+
+MOD CIND CAS 09_2025
+
+TIEMPO COMPLETO
+
+5
+
+CLÁUSULAS ESPECÍFICAS PARA PERSONAS CON DISCAPACIDAD
+
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+3
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+3
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+3
+
+0
+
+Que el/la trabajador/a, es persona con discapacidad (1) y que tiene reconocida la condición de tal como se acredita mediante certiﬁcación expedida
+por (2): ................................................................................................................................................................................................................................
+En el caso de contratos celebrados a tiempo completo, la empresa podrá tener derecho a las subvenciones correspondientes de acuerdo con
+lo establecido en el Real Decreto 818/2021, de 28 de septiembre, en los términos que determine el servicio público de empleo competente y a
+las siguientes boniﬁcaciones, de acuerdo con la Ley 43/2006, de 29 de diciembre, en la cuota empresarial a la Seguridad Social durante toda la
+vigencia del contrato:
+TRABAJADORES/AS CON DISCAPACIDAD SIN ESPECIALES DIFICULTADES PARA SU INSERCIÓN LABORAL (3)
+HOMBRES
+
+MUJERES
+
+MENORES DE 45 AÑOS
+
+375 euros/mes
+
+445,83 euros/mes
+
+MAYORES DE 45 AÑOS
+
+475 euros/mes
+
+475 euros/mes
+
+TRABAJADORES/AS CON DISCAPACIDAD CON ESPECIALES DIFICULTADES PARA SU INSERCIÓN LABORAL (3)
+HOMBRES
+
+MUJERES
+
+MENORES DE 45 AÑOS
+
+425 euros/mes
+
+495,83 euros/mes
+
+MAYORES DE 45 AÑOS
+
+525 euros/mes
+
+525 euros/mes
+
+En el caso de contratos celebrados a tiempo parcial, la empresa podrá tener derecho a las subvenciones correspondientes de acuerdo con lo
+establecido en el Real Decreto 818/2021, de 28 de septiembre, en los términos que determine el servicio público de empleo competente y las
+boniﬁcaciones que resulten de aplicar en proporción a la jornada establecida en el contrato. (Artículo 10.2 del Real Decreto-ley 1/2023, de 10
+enero).
+Si el/la trabajador/a proviene de un Centro Especial de Empleo o un enclave laboral no se requerirá la inscripción como demandante de empleo
+en los servicios públicos de empleo a efectos de la aplicación de las boniﬁcaciones y podrá tener derecho a las subvenciones correspondientes
+de acuerdo con lo establecido en el Real Decreto 818/2021, de 28 de septiembre, en los términos que determine el servicio público de empleo
+competente.
+El/la trabajador/a proviene de un Centro Especial de Empleo.
+
+MOD CIND CAS 09_2025
+
+El/la trabajador/a proviene de un enclave laboral.
+
+(1)
+(2)
+(3)
+
+De acuerdo con lo establecido en el artículo 2.2.5). de la Ley 43/2006, de 29 de diciembre.
+Indicar el Organismo Oﬁcial que ha expedido la certiﬁcación.
+Personas con discapacidad con especiales diﬁcultades para su inserción laboral. Artículo 2.2.2). de la Ley 43/2006, de 29 de diciembre.
+
+6
+
+CLÁUSULAS ESPECÍFICAS PARA PERSONAS CON CAPACIDAD INTELECTUAL LÍMITE
+
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+5
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+5
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+5
+
+0
+
+1.- Que el trabajador/a es persona con capacidad intelectual límite, de acuerdo con lo establecido en el Real Decreto 368/2021, de 25 de mayo y
+que tiene reconocida tal consideración como se acredita mediante certiﬁcación expedida por (1):
+.............................................................................................................................................................................................................................................
+2.- En el caso de contratos celebrados a tiempo completo, la empresa podrá tener derecho a una subvención de 2.000 euros, si se cumplen los
+requisitos establecidos en el Real Decreto 1451/1983, de 11 de mayo, modiﬁcado por el Real Decreto 368/2021, de 25 de mayo, en los términos
+que determine el Servicio Público de Empleo competente.
+Asimismo la empresa tendrá derecho a una boniﬁcación mensual de la cuota a la Seguridad Social o, en su caso, por su equivalente diario, por
+trabajador/a contratado/a de 128 euros/mes, durante 4 años, de acuerdo con lo establecido en el Real Decreto-ley 1/2023, de 10 enero.
+
+MOD CIND CAS 09_2025
+
+3.- En el caso de que el contrato se celebre a tiempo parcial la empresa podrá tener derecho a una subvención si se cumplen los requisitos
+establecidos en el Real Decreto 1451/1983, de 11 de mayo, modiﬁcado por el Real Decreto 368/2021, de 25 de mayo y a las boniﬁcaciones
+que resulten de aplicar en proporción a la jornada establecida en el contrato, sin que esta pueda ser inferior, a efectos de la aplicación de los
+correspondientes incentivos, al 50 % de la jornada a tiempo completo de una persona trabajadora comparable. (Artículo 10.2 del Real Decreto-ley
+1/2023, de 10 enero).
+
+(1)
+
+Indicar el Organismo Oﬁcial que ha expedido la certiﬁcación.
+
+7
+
+CLÁUSULAS ESPECÍFICAS PARA PERSONAS CON DISCAPACIDAD EN CENTROS ESPECIALES DE
+EMPLEO
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+5
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+5
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+5
+
+0
+
+Que el/la trabajador/a, es persona con discapacidad y que tiene reconocida la condición de tal como se acredita mediante certiﬁcación expedida por
+(1): ......................................................................................................................................................................................................................................
+Que se establece un período de adaptación al trabajo que a su vez tendrá el carácter de periodo de prueba de (2)
+.............................................................................................................................................................................................................................................
+en las condiciones siguientes (3)
+.............................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................
+Para lograr la adecuación del puesto de trabajo a las características del/de la trabajador/a, la empresa se compromete a realizar las siguientes
+adaptaciones al puesto de trabajo:
+.............................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................
+y/o en caso de que el contrato sea a domicilio se realizarán los servicios de ajuste de personal y social siguientes:
+.............................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................
+Los centros especiales de empleo que contraten indeﬁnidamente a personas con discapacidad, tendrán derecho ,durante toda la vigencia
+del contrato, a las boniﬁcaciones del 100 % de la cuota empresarial a la Seguridad Social, incluidas las de accidente de trabajo y enfermedad
+profesional y las cuotas de recaudación conjunta, de acuerdo con lo establecido en la Ley 43/2006, de 29 de diciembre.y el Real Decreto-ley 1/2023,
+de 10 enero.
+Asimismo podrá tener derecho a las subvenciones correspondientes de acuerdo con lo establecido en el Real Decreto 818/2021, de 28 de
+septiembre, en los términos que determine el servicio público de empleo competente.
+
+MOD CIND CAS 09_2025
+
+En lo no previsto en este contrato se estará a la legislación vigente que resulte de aplicación, y en particular el Real Decreto 1368/1985, de 17 de
+julio y en el Estatuto de los Trabajadores.
+
+(1)
+(2)
+(3)
+
+Indicar el Organismo Oﬁcial que ha expedido la certiﬁcación.
+No podrá exceder de 6 meses.
+Las condiciones del período de adaptación al trabajo serán las determinadas, en su caso, por el equipo multiprofesional.
+
+8
+
+CLÁUSULAS ESPECÍFICAS PARA PERSONAS TRABAJADORAS READMITIDAS TRAS HABER CESADO
+EN LA EMPRESA POR INCAPACIDAD PERMANENTE, TOTAL O ABSOLUTA (1)
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+5
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+5
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+5
+
+0
+
+Señalar lo que proceda:
+La persona trabajadora cesó en la empresa por haberle reconocido una incapacidad permanente total o absoluta recobrando su plena
+capacidad laboral y es readmitida en la misma empresa en su categoría o grupo profesional.
+La persona trabajadora cesó en la empresa por haberle reconocido una invalidez permanente y pasa a incapacidad permanente parcial y es
+readmitida en la misma empresa.
+La persona trabajadora es mayor de 55 años con incapacidad permanente y se reincorpora en su empresa con otra categoría.
+La persona trabajadora es mayor de 55 años con incapacidad permanente y recupera su capacidad y es contratada por otra empresa.
+En estos supuestos la contratación indeﬁnida a tiempo completo de estas personas trabajadoras dará derecho a una boniﬁcación de 138 euros/mes
+durante 2 años, siempre que la readmisión no responda a un derecho de las personas trabajadoras a reincorporarse al puesto de trabajo. (Artículo
+15 del Real Decreto-ley 1/2023, de 10 enero).
+
+MOD CIND CAS 09_2025
+
+Si el contrato se celebra a tiempo parcial, la boniﬁcación se reducirá proporcionalmente en función de la jornada establecida en el contrato, sin
+que esta pueda ser inferior a efectos de la aplicación de los correspondientes incentivos al 50 % de la jornada a tiempo completo de una persona
+trabajadora comparable. (Artículo 10.2 del Real Decreto-ley 1/2023, de 10 enero).
+
+(1)
+
+Según lo establecido en el artículo 15 del Real Decreto-ley 1/2023, de 10 de enero.
+
+9
+
+CLÁUSULAS ESPECÍFICAS PARA PERSONAS DESEMPLEADAS DE LARGA DURACIÓN
+
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+5
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+5
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+5
+
+0
+
+El/la trabajador/a ha estado desempleado/a e inscrito/a en la oﬁcina de empleo al menos 12 meses en los 18 meses anteriores a la contratación.
+Si reúnen los requisitos y condiciones establecidos en el artículo 21 del Real Decreto-ley 1/2023, de 10 enero, la contratación indeﬁnida a tiempo
+completo dará derecho a las siguientes boniﬁcaciones:
+HOMBRES
+
+MUJERES
+
+MENORES DE 45 AÑOS
+
+110 euros/mes durante 3 años
+
+128 euros/mes durante 3 años
+
+MAYORES DE 45 AÑOS
+
+128 euros/mes durante 3 años
+
+128 euros/mes durante 3 años
+
+MOD CIND CAS 09_2025
+
+Si el contrato se celebra a tiempo parcial la boniﬁcación se reducirá proporcionalmente en función de la jornada establecida en el contrato, sin que
+esta pueda ser inferior, a efectos de la aplicación de los correspondientes incentivos, al 50 % de la jornada a tiempo completo de una persona
+trabajadora comparable. (Artículo 10.2 del Real Decreto-ley 1/2023, de 10 enero).
+
+10
+
+CLÁUSULAS ESPECÍFICAS PARA PERSONAS TRABAJADORAS EN SITUACIÓN DE EXCLUSIÓN SOCIAL
+
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+5
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+5
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+5
+
+0
+
+Que el/la trabajador/a está desempleado/a y se encuentra incluido/a en alguna de las situaciones contempladas en el artículo 6.d del Real Decretoley 1/2023, de 10 enero. y que acredita mediante certiﬁcación emitida por los Servicios Sociales competentes de (1):
+.............................................................................................................................................................................................................................................
+que pertenece al colectivo de:
+Perceptores/as de Rentas Mínimas de Inserción, o cualquier otra prestación de igual o similar naturaleza, según la denominación adoptada
+en cada Comunidad Autónoma, así como los miembros de la unidad de convivencia beneﬁciarios de ella.
+Personas que no puedan acceder a las prestaciones a las que se hace referencia en el párrafo anterior, por alguna de las siguientes causas:
+- Falta de período exigido de residencia o empadronamiento, o para la constitución de la Unidad Perceptora.
+- Haber agotado el período máximo de percepción legalmente establecido.
+Jóvenes mayores de dieciocho años y menores de treinta procedentes de Instituciones de Protección de Menores.
+Personas con problemas de drogodependencia u otros trastornos adictivos que se encuentren en procesos de rehabilitación o reinserción social.
+Internos/as de centros penitenciarios cuya situación penitenciaria les permita acceder a un empleo y cuya relación laboral no esté incluida en
+el ámbito de aplicación de la relación laboral especial regulada en el artículo 1 del Real Decreto 782/2001, de 6 de julio, así como liberados/as
+condicionales y exreclusos/as.
+Menores internos incluidos en el ámbito de aplicación de la Ley Orgánica 5/2000, de 12 de enero, reguladora de la responsabilidad penal de
+los menores, cuya situación les permita acceder a un empleo y cuya relación laboral no esté incluida en el ámbito de aplicación de la relación
+laboral especial a que se reﬁere el artículo 53.4 del reglamento de la citada Ley, aprobado por el Real Decreto 1774/2004, de 30 de julio, así
+como los/as que se encuentren en situación de libertad vigilada y los/as exinternos/as.
+Personas procedentes de centros de alojamiento alternativo autorizado por las Comunidades Autónomas y las ciudades de Ceuta y Melilla.
+Personas procedentes de servicios de prevención e inserción social autorizados/as por las Comunidades Autónomas y las ciudades de Ceuta
+y Melilla.
+Otros colectivos que tengan acreditada la condición de persona en riesgo o situación de exclusión social por los Servicios Sociales
+competentes.
+Si se reúnen los requisitos y condiciones establecidos en el artículo 20 del Real Decreto-ley 1/2023, de 10 de enero, la contratación indeﬁnida a
+tiempo completo de personas trabajadoras en situación de exclusión social dará derecho a una boniﬁcación en la cotización de 128 euros/mes
+durante 4 años.
+SÍ
+NO ha ﬁnalizado un contrato de trabajo en una empresa de inserción social durante los 12 meses anteriores. En este caso, la boniﬁcación
+será de 147 euros/mes durante 12 meses, y a partir de ese período será de aplicación una boniﬁcación de 128 euros/mes durante 3 años.
+
+MOD CIND CAS 09_2025
+
+Si el contrato se celebra a tiempo parcial la boniﬁcación se reducirá proporcionalmente en función de la jornada establecida en el contrato, sin que
+esta pueda ser inferior, a efectos de la aplicación de los correspondientes incentivos, al 50 % de la jornada a tiempo completo de una persona
+trabajadora comparable. (Artículo 10.2 del Real Decreto-ley 1/2023, de 10 enero).
+En lo no previsto en este contrato, se estará a la legislación vigente que resulte de aplicación, y en particular, a lo dispuesto en el Estatuto de los
+Trabajadores y en el Real Decreto-ley 1/2023, de 10 enero.
+
+(1)
+
+Indicar el Organismo Oﬁcial que ha expedido la certiﬁcación.
+
+11
+
+CLÁUSULAS ESPECÍFICAS PARA MUJERES TRABAJADORAS VÍCTIMAS DE VIOLENCIA DE GÉNERO,
+VÍCTIMAS DE VIOLENCIAS SEXUALES, VÍCTIMAS DE TRATA DE SERES HUMANOS, TANTO CON
+FINES DE EXPLOTACIÓN SEXUAL COMO LABORAL Y MUJERES EN CONTEXTO DE PROSTITUCIÓN, O
+PERSONAS VÍCTIMAS DE TERRORISMO
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+5
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+5
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+5
+
+0
+
+Señalar lo que proceda:
+A - Que la trabajadora tiene reconocida la consideración, como se acredita mediante certiﬁcación expedida por los Servicios Sociales
+competentes de (1): ..................................................................................................................................................................................................
+de MUJER VÍCTIMA DE VIOLENCIA DE GÉNERO de conformidad con lo previsto en el artículo 23 de la Ley Orgánica 1/2004, de 28 de
+diciembre y puede acceder a las boniﬁcaciones establecidas en el artículo 16 del Real Decreto-ley 1/2023, de 10 de enero.
+B - Que la trabajadora tiene reconocida la consideración, como se acredita mediante certiﬁcación expedida por los Servicios Sociales
+competentes de (1): ..................................................................................................................................................................................................
+de MUJER VÍCTIMA DE VIOLENCIAS SEXUALES de conformidad con lo previsto en el artículo 37 de la Ley Orgánica 10/2022, de 6 de
+septiembre y puede acceder a las boniﬁcaciones establecidas en el artículo 16 del Real Decreto-ley 1/2023, de 10 de enero.
+C - Que la trabajadora tiene reconocida la consideración, como se acredita mediante certiﬁcación expedida por los Servicios Sociales
+competentes de (1): ..................................................................................................................................................................................................
+de MUJER VÍCTIMA DE TRATA DE SERES HUMANOS, DE EXPLOTACIÓN SEXUAL O LABORAL Y MUJER EN CONTEXTO DE
+PROSTITUCIÓN de acuerdo con lo previsto en el artículo 47 del Real Decreto-ley 6/2022, de 29 de marzo y puede acceder a las
+boniﬁcaciones establecidas en el artículo 16 del Real Decreto-ley 1/2023, de 10 de enero.
+D - Que el/la trabajador/a tiene reconocida la consideración, como se acredita mediante certiﬁcación expedida por el organismo competente
+de (1): .......................................................................................................................................................................................................................
+de PERSONA VÍCTIMA DE TERRORISMO de acuerdo a lo dispuesto en el artículo 34 de la Ley 29/2011, de 22 de septiembre y puede
+acceder a las boniﬁcaciones establecidas en el artículo 22 del Real Decreto-ley 1/2023, de 10 de enero.
+Si se reúnen los requisitos establecidos en el artículo 16 para los supuestos A, B y C o en el artículo 22 en el supuesto D del Real Decreto-ley
+1/2023, de 10 de enero, la contratación indeﬁnida a tiempo completo dará derecho a una boniﬁcación en la cotización de 128 euros/mes durante 4
+años.
+
+MOD CIND CAS 09_2025
+
+Si el contrato se celebra a tiempo parcial la boniﬁcación se reducirá proporcionalmente en función de la jornada establecida en el contrato, sin que
+esta pueda ser inferior, a efectos de la aplicación de los correspondientes incentivos, al 50 % de la jornada a tiempo completo de una persona
+trabajadora comparable. (Artículo 10.2 del Real Decreto-ley 1/2023, de 10 enero).
+
+(1)
+
+Indicar el Organismo Oﬁcial que ha expedido la certiﬁcación.
+
+12
+
+CLÁUSULAS ESPECÍFICAS PARA PERSONAS TRABAJADORAS EN SITUACIÓN DE EXCLUSIÓN SOCIAL
+EN EMPRESAS DE INSERCIÓN
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+5
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+5
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+5
+
+0
+
+Que el/la trabajador/a está desempleado/a y se encuentra Incluido/a en alguna de las situaciones contempladas en el artículo 2 de la Ley 44/2007,
+de 13 de diciembre, por la que se regulan las empresas de inserción y que acredita mediante certiﬁcación emitida por los Servicios Sociales
+competentes de (1): ............................................................................................................................................................................................................
+que pertenece al colectivo de:
+Perceptores/as de Rentas Mínimas de Inserción, o cualquier otra prestación de igual o similar naturaleza, según la denominación adoptada
+en cada Comunidad Autónoma, así como los miembros de la unidad de convivencia beneﬁciarios de ella.
+Personas que no puedan acceder a las prestaciones a las que se hace referencia en el párrafo anterior, por alguna de las siguientes causas:
+- Falta de período exigido de residencia o empadronamiento, o para la constitución de la Unidad Perceptora.
+- Haber agotado el período máximo de percepción legalmente establecido.
+Jóvenes mayores de dieciocho años y menores de treinta procedentes de Instituciones de Protección de Menores.
+Personas con problemas de drogodependencia u otros trastornos adictivos que se encuentren en procesos de rehabilitación o reinserción social.
+Internos/as de centros penitenciarios cuya situación penitenciaria les permita acceder a un empleo y cuya relación laboral no esté incluida en
+el ámbito de aplicación de la relación laboral especial regulada en el artículo 1 del Real Decreto 782/2001, de 6 de julio, así como liberados/as
+condicionales y exreclusos/as.
+Menores internos incluidos en el ámbito de aplicación de la Ley Orgánica 5/2000, de 12 de enero, reguladora de la responsabilidad penal de
+los menores, cuya situación les permita acceder a un empleo y cuya relación laboral no esté incluida en el ámbito de aplicación de la relación
+laboral especial a que se reﬁere el artículo 53.4 del reglamento de la citada Ley, aprobado por el Real Decreto 1774/2004, de 30 de julio, así
+como los/as que se encuentren en situación de libertad vigilada y los/as exinternos/as.
+Personas procedentes de centros de alojamiento alternativo autorizado por las Comunidades Autónomas y las ciudades de Ceuta y Melilla.
+Personas procedentes de servicios de prevención e inserción social autorizados/as por las Comunidades Autónomas y las ciudades de Ceuta
+y Melilla.
+Otros colectivos que tengan acreditada la condición de personas en riesgo o situación de exclusión social por los servicios sociales competentes.
+Señalar lo que proceda:
+Si se reúnen los requisitos establecidos en la Ley 44/2007, de 13 de diciembre, en los términos establecidos en la disposición adicional sexta
+del Real Decreto-ley 1/2023, de 10 de enero, la empresa se boniﬁcará en la cuota empresarial a la Seguridad Social en 70,83 euros/mes,
+durante tres años, si el contrato se celebra a tiempo completo.
+Si el contrato se suscribe con personas menores de 30 años o menores de 35 que tengan un grado de discapacidad igual o superior al 33 %
+la boniﬁcación será de 147 euros/mes durante 3 años. (Disposición adicional sexta del Real Decreto-ley 1/2023, de 10 de enero).
+
+MOD CIND CAS 09_2025
+
+Si el contrato se celebra a tiempo parcial la boniﬁcación se reducirá proporcionalmente en función de la jornada establecida en el contrato, sin que
+esta pueda ser inferior, a efectos de la aplicación de los correspondientes incentivos, al 50 % de la jornada a tiempo completo de una persona
+trabajadora comparable. (Artículo 10.2 del Real Decreto-ley 1/2023, de 10 enero).
+En lo no previsto en este contrato, se estará a la legislación vigente que resulte de aplicación, y en particular, a lo dispuesto en el Estatuto de los
+Trabajadores, en la Ley 44/2007, de 13 de diciembre, en los artículos 5 al 9 de la Ley 43/2006, de 29 de diciembre y en el Real Decreto-ley 1/2023,
+de 10 de enero.
+(1)
+
+Indicar el Organismo Oﬁcial que ha expedido la certiﬁcación.
+
+13
+
+CLÁUSULAS ESPECÍFICAS PARA PERSONAS QUE REALIZAN FORMACIÓN PRÁCTICA EN EMPRESAS
+(1)
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+5
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+5
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+5
+
+0
+
+PERSONAS SIN DISCAPACIDAD
+
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+3
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+3
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+3
+
+0
+
+PERSONAS CON DISCAPACIDAD
+
+La persona trabajadora ha desarrollado formación práctica en la empresa contratante.
+La persona trabajadora es persona con discapacidad y tiene reconocida esa condición tal y como se acredita en la certiﬁcación expedida por
+(2) .............................................................................................................................................................................................................................
+La contratación indeﬁnida a tiempo completo por parte de la empresa donde está desarrollando la formación práctica dará derecho a una
+boniﬁcación en la cotización de 138 euros/mes durante 3 años o toda la vigencia del contrato en caso de contratar a una persona con
+discapacidad. Artículo 25 del Real Decreto-ley 1/2023, de 10 de enero.
+
+MOD CIND CAS 09_2025
+
+Si el contrato se celebra a tiempo parcial la boniﬁcación se reducirá proporcionalmente en función de la jornada establecida en el contrato,
+sin que esta pueda ser inferior, a efectos de la aplicación de los correspondientes incentivos, al 50 % de la jornada a tiempo completo de una
+persona trabajadora comparable. El citado límite de duración mínima de la jornada a tiempo parcial no resulta de aplicación al colectivo de
+personas con discapacidad. (Artículo 10.2 del Real Decreto-ley 1/2023, de 10 de enero).
+
+(1)
+(2)
+
+Artículo 25 del Real Decreto-ley 1/2023, de 10 de enero.
+Indicar el organismo oﬁcial que ha expedido la certiﬁcación.
+
+14
+
+CLÁUSULAS ESPECÍFICAS PARA PERSONAS TRABAJADORAS PROCEDENTES DE UN CONTRATO
+FORMATIVO (FORMACIÓN EN ALTERNANCIA O PARA LA OBTENCIÓN DE LA PRÁCTICA PROFESIONAL)
+DE UNA EMPRESA DE TRABAJO TEMPORAL
+CÓDIGO DE CONTRATO
+TIEMPO COMPLETO
+
+1
+
+5
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+5
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+5
+
+0
+
+Que el/la trabajador/a ha estado contratado/a por una Empresa de Trabajo Temporal con un contrato formativo (de formación en alternancia o
+para la obtención de la práctica profesional) prestando servicios en la empresa usuaria, y sin solución de continuidad se celebra este contrato, la
+empresa tendrá derecho a la boniﬁcación en la cotización a la Seguridad Social establecida en el artículo 24 del Real Decreto-ley 1/2023, de 10 de
+enero, con la siguiente cuantía, si el contrato se celebra a tiempo completo:
+HOMBRES: 128 euros/mes, durante 3 años.
+MUJERES: 147 euros/mes, durante 3 años.
+
+MOD CIND CAS 09_2025
+
+Si el contrato se celebra a tiempo parcial la boniﬁcación se reducirá proporcionalmente en función de la jornada establecida en el contrato, sin que
+esta pueda ser inferior, a efectos de la aplicación de los correspondientes incentivos, al 50 % de la jornada a tiempo completo de una persona
+trabajadora comparable. (Artículo 10.2 del Real Decreto-ley 1/2023, de 10 de enero).
+
+15
+
+CLÁUSULAS ESPECÍFICAS PARA PERSONAS TRABAJADORAS AL SERVICIO DEL HOGAR FAMILIAR
+
+CÓDIGO DE CONTRATO
+
+SÍ
+
+TIEMPO COMPLETO
+
+1
+
+0
+
+0
+
+TIEMPO PARCIAL
+
+2
+
+0
+
+0
+
+FIJO-DISCONTINUO
+
+3
+
+0
+
+0
+
+NO , se acuerda la prestación de horas de presencia a disposición del empleador.
+
+Las horas de presencia serán .................. horas semanales, distribuidas de la siguiente manera:
+.............................................................................................................................................................................................................................................
+.............................................................................................................................................................................................................................................
+El tiempo de presencia sea objeto de retribución o compensación de forma siguiente (señale lo que proceda):
+Compensación con periodos equivalentes de descanso retribuido.
+Retribución con un salario de cuantía no inferior al correspondiente a las horas ordinarias.
+De cualquiera de las anteriores maneras.
+
+SÍ
+
+NO , se acuerda que el/la trabajador/a pernocte en el domicilio familiar.
+
+El régimen de las pernoctas será de ......................................................................................................................................... noches a la semana.
+Durante el descanso semanal y el período de vacaciones el/la trabajador/a no está obligado a residir en el domicilio familiar.
+
+SÍ
+
+NO , se acuerdan prestaciones salariales en especie.
+
+La persona contratante tendrá derecho en la cotización empresarial a una reducción del 20 % por contingencias comunes. Si se cumplen los
+requisitos de la disposición adicional tercera bis del Real Decreto-ley 1/2023, de 10 de enero, se podrá aplicar una boniﬁcación del 45 % en el caso
+de familias numerosas, que será incompatible con la reducción del 20 % anterior.
+Asimismo se aplicará una boniﬁcación del 80 % en las aportaciones empresariales a la cotización por desempleo y al Fondo de Garantía Salarial.
+(Disposición adicional primera y disposición adicional séptima, apartado 4 del Real Decreto-ley 16/2022, de 6 de septiembre.
+En lo no previsto en este contrato, se estará a la legislación vigente que resulte de aplicación, y particularmente al Real Decreto 1620/2011 , de
+14 de noviembre, por el que se regula la relación laboral de carácter especial del servicio de hogar familiar y supletoriamente en lo que resulte
+compatible, el Estatuto de los Trabajadores..
+La persona contratada tendrá derecho a la cobertura de contingencias de protección por desempleo y Fondo de Garantía Salarial en los términos
+previstos en la normativa aplicable.
+
+MOD CIND CAS 09_2025
+
+El contenido del presente contrato se presentará en la Tesorería General de la Seguridad Social en el trámite de alta de el/la empleado/a de hogar
+de la Seguridad Social a efectos de comunicación del contenido del contrato al Servicio Público de Empleo.
+
+16
+
+CLÁUSULAS ESPECÍFICAS DE LA CONVERSIÓN DE CONTRATO TEMPORAL EN CONTRATO
+INDEFINIDO
+
+TIEMPO COMPLETO
+
+TIEMPO PARCIAL
+
+CÓDIGO DE CONTRATO
+
+FIJO-DISCONTINUO
+
+CÓDIGO DE CONTRATO
+
+CÓDIGO DE CONTRATO
+
+PERSONAS CON DISCAPACIDAD
+
+1
+
+3
+
+9
+
+PERSONAS CON DISCAPACIDAD
+
+2
+
+3
+
+9
+
+PERSONAS CON DISCAPACIDAD
+
+3
+
+3
+
+9
+
+BONIFICADO (1)
+
+1
+
+0
+
+9
+
+BONIFICADO (1)
+
+2
+
+0
+
+9
+
+BONIFICADO (1)
+
+3
+
+0
+
+9
+
+CON BONIFICACIÓN CEE (2)
+
+1
+
+0
+
+9
+
+CON BONIFICACIÓN CEE (2)
+
+2
+
+0
+
+9
+
+CON BONIFICACIÓN CEE (2)
+
+3
+
+0
+
+9
+
+SIN BONIFICACIÓN
+
+1
+
+8
+
+9
+
+SIN BONIFICACIÓN
+
+2
+
+8
+
+9
+
+SIN BONIFICACIÓN
+
+3
+
+8
+
+9
+
+COMUNICAN al Servicio Público de Empleo de ............................................................................................................................................................
+que con fecha ......................... , han acordado la CONVERSIÓN en:
+Contrato INDEFINIDO.
+Contrato FIJO-DISCONTINUO.
+
+MOD CIND CAS 09_2025
+
+De un contrato (3) ...............................................................................................................................................................................................................
+celebrado por las partes arriba mencionadas el día ......................... y que fue registrado o comunicado al Servicio Público de empleo de
+....................................................................................................................., en fecha ......................... y con el número .........................................
+
+(1)
+(2)
+(3)
+
+Cuando la conversión en indeﬁnido se trate de un contrato formativo o de relevo.
+Conversión en indeﬁnido en Centro Especial de Empleo.
+Indique la modalidad de contrato temporal que se convierte en indeﬁnido. Se pueden convertir con derecho a boniﬁcación los contratos formativos, de relevo,
+temporales de fomento del empleo para personas con discapacidad y temporales en Centros Especiales de Empleo. Asimismo, se pueden convertir con derecho a
+boniﬁcación en ﬁjos discontinuos los contratos temporales suscritos con personas trabajadoras por cuenta ajena agrarias.
+
+17
+
+OTRAS SITUACIONES
+
+CÓDIGO DE CONTRATO
+9
+
+9
+
+0
+
+ALTA DIRECCIÓN
+
+9
+
+9
+
+0
+
+OTROS
+
+9
+
+9
+
+0
+
+MOD CIND CAS 09_2025
+
+CONTRATO EN GRUPO
+
+18
+
+CLÁUSULAS ADICIONALES
+........................................................................................................................................................................................................................................
+Las pagas extraordinarias se prorratean en las doce mensualidades del año,
+quedando incluidas en el salario mensual indicado en la cláusula quinta.
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+........................................................................................................................................................................................................................................
+
+Y para que conste, se extiende este contrato por triplicado ejemplar en el lugar y fecha a continuación indicados, ﬁrmando las partes interesadas.
+
+Cuenca
+
+2025
+20
+Noviembre
+En ........................................................................................................................... a .................
+de ............................................
+de ...................
+
+MOD CIND CAS 09_2025
+
+El/la trabajador/a
+
+El/la representante
+
+El/la representante legal
+
+de la empresa
+
+del/la menor, si procede
+
+IMPORTANTE
+(TODAS LAS PÁGINAS CUMPLIMENTADAS DE ESTE CONTRATO DEBERÁN IR FIRMADAS EN EL MARGEN
+IZQUIERDO PARA MAYOR SEGURIDAD JURÍDICA)
+
+19
+
+

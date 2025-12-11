@@ -279,6 +279,7 @@ import { AuthService } from '../../core/services/auth.service';
             class="appointment"
             [class.urgent]="apt.status === 'URGENT'"
             [class.pending]="apt.status === 'PENDING'"
+            [class.other-professional]="isProfessional() && currentProfessionalId !== null && apt.professional?.id !== currentProfessionalId"
             (click)="selectAppointment(apt)"
           >
             {{ formatTime(apt.start_time) }} - {{ apt.professional?.user?.first_name || 'Sin asignar' }}
@@ -309,9 +310,9 @@ import { AuthService } from '../../core/services/auth.service';
               <input type="date" [(ngModel)]="selectedDate" [ngModelOptions]="{standalone: true}" [min]="getMinDate()" [max]="getMaxDate()" (change)="onDateSelected()" />
               <small style="color: #666; font-size: 0.85rem; margin-top: 0.25rem;">Seleccione una fecha para ver horarios disponibles</small>
             </div>
-            <div class="form-group full-width" *ngIf="availableSlots.length > 0">
+            <div class="form-group full-width">
               <label>Horarios Disponibles *</label>
-              <div class="available-slots">
+              <div *ngIf="selectedDate && selectedProfessionalId && availableSlots.length > 0" class="available-slots">
                 <div *ngFor="let slot of availableSlots" 
                      class="slot-item" 
                      [class.selected]="selectedSlot === slot"
@@ -321,16 +322,17 @@ import { AuthService } from '../../core/services/auth.service';
                   <span *ngIf="slot.occupied" class="occupied-badge">Ocupado</span>
                 </div>
               </div>
+              <div *ngIf="!selectedDate || !selectedProfessionalId" style="padding: 1rem; background-color: #fafafa; border-radius: 5px; color: #666; text-align: center;">
+                <p style="margin: 0;">Seleccione un profesional y una fecha para ver los horarios disponibles</p>
+              </div>
+              <div *ngIf="selectedDate && selectedProfessionalId && availableSlots.length === 0 && !loadingAvailability" style="padding: 1rem; background-color: #fff3cd; border-radius: 5px; color: #856404; text-align: center;">
+                <p style="margin: 0;">No hay horarios disponibles para esta fecha</p>
+              </div>
+              <div *ngIf="loadingAvailability" style="padding: 1rem; background-color: #fafafa; border-radius: 5px; color: #666; text-align: center;">
+                <p style="margin: 0;">Cargando horarios disponibles...</p>
+              </div>
               <small *ngIf="selectedSlot && !selectedSlot.occupied" style="color: #4CAF50; font-size: 0.85rem; margin-top: 0.25rem; display: block;">
                 ✓ Horario seleccionado: {{ formatTimeSlot(selectedSlot.start) }}
-              </small>
-            </div>
-            <div class="form-group" *ngIf="!selectedDate || availableSlots.length === 0">
-              <label>Fecha y Hora de Inicio *</label>
-              <input type="datetime-local" formControlName="start_time" [min]="getMinDateTime()" [max]="getMaxDateTime()" required (change)="onRequestStartTimeChange()" />
-              <small style="color: #666; font-size: 0.85rem; margin-top: 0.25rem;">La cita durará 1 hora. O seleccione profesional y fecha arriba para ver horarios disponibles.</small>
-              <small *ngIf="requestForm.get('start_time')?.touched && getRequestStartTimeErrorMessage()" style="color: #f44336; font-size: 0.85rem; margin-top: 0.25rem; display: block;">
-                {{ getRequestStartTimeErrorMessage() }}
               </small>
             </div>
             <div class="form-group">
@@ -585,6 +587,16 @@ import { AuthService } from '../../core/services/auth.service';
       .appointment.confirmed {
         background-color: #4CAF50;
         color: white;
+      }
+
+      .appointment.other-professional {
+        background-color: #9e9e9e;
+        color: white;
+        opacity: 0.7;
+      }
+
+      .appointment.other-professional:hover {
+        opacity: 0.9;
       }
 
       .appointment.available-slot {
@@ -1082,6 +1094,7 @@ export class AppointmentsComponent implements OnInit {
   appointmentsByDay: Map<string, Appointment[]> = new Map();
   patients: PatientProfile[] = [];
   professionals: ProfessionalProfile[] = [];
+  currentProfessionalId: number | null = null;
   rooms: Room[] = [];
   services: Service[] = [];
   showNewAppointmentForm = false;
@@ -1183,6 +1196,16 @@ export class AppointmentsComponent implements OnInit {
     this.api.getPatients().subscribe((patients) => (this.patients = patients));
     this.api.getProfessionals().subscribe((pros) => {
       this.professionals = pros;
+      // Si es profesional, obtener su ID
+      if (this.isProfessional()) {
+        const currentUser = this.auth.getCurrentUser();
+        if (currentUser) {
+          const currentPro = pros.find(p => p.user.id === currentUser.id);
+          if (currentPro) {
+            this.currentProfessionalId = currentPro.id;
+          }
+        }
+      }
       // Si es paciente, seleccionar el primer profesional por defecto y cargar disponibilidad
       if (this.isPatient() && this.activeTab === 'available' && pros.length > 0) {
         this.selectedProfessionalForAvailability = pros[0].id;
@@ -1696,7 +1719,8 @@ export class AppointmentsComponent implements OnInit {
     // Abrir formulario de solicitar cita con los datos prellenados
     this.switchToTab('request');
     
-    // Formatear la fecha correctamente sin problemas de zona horaria
+    // Usar la fecha del día seleccionado directamente (no del slot para evitar problemas de zona horaria)
+    // El parámetro 'day' ya viene como Date del calendario, usarlo directamente
     const year = day.getFullYear();
     const month = String(day.getMonth() + 1).padStart(2, '0');
     const date = String(day.getDate()).padStart(2, '0');
@@ -1716,34 +1740,61 @@ export class AppointmentsComponent implements OnInit {
         const slotStartTime = new Date(slot.start);
         const slotHour = slotStartTime.getHours();
         const slotMinutes = slotStartTime.getMinutes();
-        const slotDateStr = slotStartTime.toISOString().split('T')[0];
         
         const matchingSlot = this.availableSlots.find(s => {
           const sDate = new Date(s.start);
-          const sDateStr = sDate.toISOString().split('T')[0];
-          // Comparar fecha y hora
-          return sDateStr === slotDateStr && 
-                 sDate.getHours() === slotHour && 
-                 sDate.getMinutes() === slotMinutes;
+          // Comparar hora y minutos
+          return sDate.getHours() === slotHour && sDate.getMinutes() === slotMinutes;
         });
         
         if (matchingSlot && !matchingSlot.occupied) {
           this.selectedSlot = matchingSlot;
-          // Establecer el valor en el formulario
-          const dateTimeString = new Date(matchingSlot.start).toISOString().slice(0, 16);
+          // Usar la fecha del día seleccionado y la hora del slot
+          const localDate = new Date(year, day.getMonth(), day.getDate(), slotHour, slotMinutes);
+          const localYear = localDate.getFullYear();
+          const localMonth = String(localDate.getMonth() + 1).padStart(2, '0');
+          const localDay = String(localDate.getDate()).padStart(2, '0');
+          const localHours = String(localDate.getHours()).padStart(2, '0');
+          const localMinutes = String(localDate.getMinutes()).padStart(2, '0');
+          const dateTimeString = `${localYear}-${localMonth}-${localDay}T${localHours}:${localMinutes}`;
+          
           this.requestForm.patchValue({ start_time: dateTimeString });
+          this.requestForm.get('start_time')?.markAsTouched();
+          this.requestForm.get('start_time')?.updateValueAndValidity();
         } else {
           // Si no se encuentra o está ocupado, usar el slot original
           this.selectedSlot = slot;
-          const dateTimeString = new Date(slot.start).toISOString().slice(0, 16);
+          const slotDate = new Date(slot.start);
+          const localDate = new Date(year, day.getMonth(), day.getDate(), slotDate.getHours(), slotDate.getMinutes());
+          const localYear = localDate.getFullYear();
+          const localMonth = String(localDate.getMonth() + 1).padStart(2, '0');
+          const localDay = String(localDate.getDate()).padStart(2, '0');
+          const localHours = String(localDate.getHours()).padStart(2, '0');
+          const localMinutes = String(localDate.getMinutes()).padStart(2, '0');
+          const dateTimeString = `${localYear}-${localMonth}-${localDay}T${localHours}:${localMinutes}`;
+          
           this.requestForm.patchValue({ start_time: dateTimeString });
+          this.requestForm.get('start_time')?.markAsTouched();
+          this.requestForm.get('start_time')?.updateValueAndValidity();
         }
-      }, 500); // Aumentar el tiempo de espera para asegurar que los slots se hayan cargado
+      }, 500);
     } else {
       // Si no hay profesional, establecer directamente el slot
       this.selectedSlot = slot;
-      const dateTimeString = new Date(slot.start).toISOString().slice(0, 16);
+      
+      // Usar la fecha del día seleccionado y la hora del slot
+      const slotDate = new Date(slot.start);
+      const localDate = new Date(year, day.getMonth(), day.getDate(), slotDate.getHours(), slotDate.getMinutes());
+      const localYear = localDate.getFullYear();
+      const localMonth = String(localDate.getMonth() + 1).padStart(2, '0');
+      const localDay = String(localDate.getDate()).padStart(2, '0');
+      const localHours = String(localDate.getHours()).padStart(2, '0');
+      const localMinutes = String(localDate.getMinutes()).padStart(2, '0');
+      const dateTimeString = `${localYear}-${localMonth}-${localDay}T${localHours}:${localMinutes}`;
+      
       this.requestForm.patchValue({ start_time: dateTimeString });
+      this.requestForm.get('start_time')?.markAsTouched();
+      this.requestForm.get('start_time')?.updateValueAndValidity();
     }
   }
 
@@ -2129,6 +2180,10 @@ export class AppointmentsComponent implements OnInit {
   }
 
   onProfessionalSelected() {
+    // Limpiar el slot seleccionado cuando se cambia el profesional
+    this.selectedSlot = null;
+    this.requestForm.patchValue({ start_time: '' });
+    
     const professionalId = this.requestForm.get('professional_id')?.value;
     if (professionalId) {
       this.selectedProfessionalId = typeof professionalId === 'string' ? parseInt(professionalId, 10) : professionalId;
@@ -2138,16 +2193,18 @@ export class AppointmentsComponent implements OnInit {
     } else {
       this.selectedProfessionalId = null;
       this.availableSlots = [];
-      this.selectedSlot = null;
     }
   }
 
   onDateSelected() {
+    // Limpiar el slot seleccionado cuando se cambia la fecha
+    this.selectedSlot = null;
+    this.requestForm.patchValue({ start_time: '' });
+    
     if (this.selectedDate && this.selectedProfessionalId) {
       this.loadAvailableSlots();
     } else if (this.selectedDate) {
       this.availableSlots = [];
-      this.selectedSlot = null;
     }
   }
 
@@ -2225,9 +2282,19 @@ export class AppointmentsComponent implements OnInit {
     }
 
     this.selectedSlot = slot;
-    // Establecer el valor en el formulario
-    const dateTimeString = new Date(slot.start).toISOString().slice(0, 16);
+    // Convertir la fecha del slot a formato local para el input datetime-local
+    // El input datetime-local espera formato YYYY-MM-DDTHH:mm en hora local
+    const localDate = new Date(slot.start);
+    const localYear = localDate.getFullYear();
+    const localMonth = String(localDate.getMonth() + 1).padStart(2, '0');
+    const localDay = String(localDate.getDate()).padStart(2, '0');
+    const localHours = String(localDate.getHours()).padStart(2, '0');
+    const localMinutes = String(localDate.getMinutes()).padStart(2, '0');
+    const dateTimeString = `${localYear}-${localMonth}-${localDay}T${localHours}:${localMinutes}`;
+    
     this.requestForm.patchValue({ start_time: dateTimeString });
+    this.requestForm.get('start_time')?.markAsTouched();
+    this.requestForm.get('start_time')?.updateValueAndValidity();
   }
 
   formatTimeSlot(isoString: string): string {
@@ -2247,8 +2314,8 @@ export class AppointmentsComponent implements OnInit {
       if (this.requestForm.get('professional_id')?.hasError('required')) {
         errors.push('El profesional es requerido');
       }
-      if (this.requestForm.get('start_time')?.hasError('required')) {
-        errors.push('La fecha y hora son requeridas');
+      if (this.requestForm.get('start_time')?.hasError('required') || !this.selectedSlot) {
+        errors.push('Debe seleccionar un horario disponible');
       }
       if (this.requestForm.get('treatment_type')?.hasError('required')) {
         errors.push('El tipo de tratamiento es requerido');
@@ -2320,7 +2387,25 @@ export class AppointmentsComponent implements OnInit {
           return;
         }
         
-        const startTime = new Date(formValue.start_time);
+        // Usar el slot seleccionado directamente si está disponible, para evitar problemas de zona horaria
+        let startTime: Date;
+        if (this.selectedSlot && this.selectedSlot.start) {
+          // Usar la fecha/hora del slot seleccionado directamente
+          startTime = new Date(this.selectedSlot.start);
+        } else if (formValue.start_time) {
+          // Si no hay slot seleccionado, usar el valor del formulario
+          // El input datetime-local devuelve la fecha en hora local
+          startTime = new Date(formValue.start_time);
+        } else {
+          this.requesting = false;
+          this.showModal = true;
+          this.modalType = 'error';
+          this.modalTitle = 'Error';
+          this.modalMessage = 'Por favor, seleccione un horario disponible.';
+          this.modalCallback = null;
+          return;
+        }
+        
         if (isNaN(startTime.getTime())) {
           this.requesting = false;
           this.showModal = true;
@@ -2332,7 +2417,7 @@ export class AppointmentsComponent implements OnInit {
         }
         
         // Validar que la fecha no sea en el pasado ni más de 3 meses en el futuro
-        if (!this.isValidStartTime(formValue.start_time)) {
+        if (!this.isValidStartTime(startTime.toISOString())) {
           this.requesting = false;
           const now = new Date();
           const maxDate = new Date(now);
@@ -2361,7 +2446,7 @@ export class AppointmentsComponent implements OnInit {
           ? parseInt(formValue.professional_id, 10) 
           : formValue.professional_id;
         
-        // No enviar end_time, el backend lo calculará automáticamente
+        // Enviar la fecha/hora en formato ISO (UTC) al backend
         const payload: any = {
           patient_id: patientProfile.id,
           professional_id: professionalId,

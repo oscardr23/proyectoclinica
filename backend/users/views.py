@@ -12,6 +12,7 @@ from .serializers import (
     PatientRegistrationSerializer,
     UserSerializer,
 )
+from .utils import verify_password
 
 User = get_user_model()
 
@@ -76,6 +77,25 @@ class UserViewSet(viewsets.ModelViewSet):
         # En lugar de eliminar, desactivar
         instance.is_active = False
         instance.save()
+
+    @action(detail=True, methods=['post'])
+    def verify_password(self, request, pk=None):
+        """Verificar si una contraseña coincide con el hash almacenado"""
+        user = self.get_object()
+        password = request.data.get('password')
+        
+        if not password:
+            return Response(
+                {'error': 'Se requiere el campo "password"'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        
+        is_valid = user.check_password(password)
+        return Response({
+            'valid': is_valid,
+            'user_id': user.id,
+            'username': user.username
+        }, status=status.HTTP_200_OK)
 
 
 class MeView(generics.RetrieveUpdateAPIView):

@@ -117,7 +117,6 @@ import { AuthService } from '../../core/services/auth.service';
     <div *ngIf="selectedUser && !showNewUserForm" class="section">
       <div class="section-header">
         <h2>Editar Usuario</h2>
-        <button class="btn btn-secondary" (click)="cancelEdit()">Volver</button>
       </div>
       
       <form (ngSubmit)="saveUser()" class="form-section">

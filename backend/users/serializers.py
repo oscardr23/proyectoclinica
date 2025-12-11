@@ -4,6 +4,7 @@ from rest_framework import serializers
 from rest_framework_simplejwt.serializers import TokenObtainPairSerializer
 
 from patients.models import PatientProfile
+from .utils import validate_password_strength
 
 User = get_user_model()
 
@@ -56,6 +57,12 @@ class PatientRegistrationSerializer(serializers.Serializer):
             raise serializers.ValidationError('El email ya está registrado.')
         return value
 
+    def validate_password(self, value):
+        is_valid, errors = validate_password_strength(value)
+        if not is_valid:
+            raise serializers.ValidationError('; '.join(errors))
+        return value
+
     def create(self, validated_data):
         patient_fields = {
             'date_of_birth': validated_data.pop('date_of_birth', None),
@@ -89,6 +96,9 @@ class ChangePasswordSerializer(serializers.Serializer):
         return value
 
     def validate_new_password(self, value):
+        is_valid, errors = validate_password_strength(value)
+        if not is_valid:
+            raise serializers.ValidationError('; '.join(errors))
         old_password = self.initial_data.get('old_password')
         if value == old_password:
             raise serializers.ValidationError('La nueva contraseña debe ser diferente a la actual.')
@@ -113,13 +123,22 @@ class CustomTokenObtainPairSerializer(TokenObtainPairSerializer):
         if not password:
             raise serializers.ValidationError('La contraseña es requerida.')
 
-        # Si se proporciona email, buscar el username correspondiente
+        # Si se proporciona email explícitamente, buscar el username correspondiente
         if email and not username:
             try:
                 user = User.objects.get(email=email)
                 username = user.username
             except User.DoesNotExist:
                 raise serializers.ValidationError('No se encontró un usuario con ese email.')
+        
+        # Si username parece un email (contiene @), intentar buscar por email
+        elif username and '@' in username:
+            try:
+                user = User.objects.get(email=username)
+                username = user.username
+            except User.DoesNotExist:
+                # Si no se encuentra por email, intentar autenticar con el username tal cual
+                pass
 
         if not username:
             raise serializers.ValidationError('Debe proporcionar username o email.')

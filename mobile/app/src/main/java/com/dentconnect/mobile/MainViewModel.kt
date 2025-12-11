@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import com.dentconnect.mobile.data.ApiServiceFactory
 import com.dentconnect.mobile.data.Appointment
+import com.dentconnect.mobile.data.BackgroundProcessor
 import com.dentconnect.mobile.data.DentConnectRepository
 import com.dentconnect.mobile.data.TokenStore
 import com.dentconnect.mobile.data.User
@@ -12,6 +13,8 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.withContext
 
 data class UiState(
     val user: User? = null,
@@ -25,6 +28,7 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     private val tokenStore = TokenStore(application)
     private val api = ApiServiceFactory.create(tokenStore)
     private val repository = DentConnectRepository(api, tokenStore)
+    private val backgroundProcessor = BackgroundProcessor()
 
     private val _uiState = MutableStateFlow(UiState())
     val uiState: StateFlow<UiState> = _uiState
@@ -32,13 +36,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     init {
         viewModelScope.launch {
             try {
-                val user = repository.loadCurrentUser()
+                val (user, appointments) = repository.loadUserAndAppointments()
                 if (user != null) {
-                    _uiState.update { it.copy(user = user) }
-                    loadAppointments()
+                    _uiState.update { it.copy(user = user, appointments = appointments) }
                 }
             } catch (e: Exception) {
-                // Silently fail if user is not logged in
                 _uiState.update { it.copy(user = null) }
             }
         }
@@ -48,7 +50,9 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
         viewModelScope.launch {
             _uiState.update { it.copy(loading = true, error = null) }
             runCatching {
-                repository.login(username, password)
+                withContext(Dispatchers.IO) {
+                    repository.login(username, password)
+                }
             }.onSuccess { user ->
                 _uiState.update { it.copy(user = user, loading = false, error = null) }
                 loadAppointments()
@@ -61,7 +65,11 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun loadAppointments() {
         viewModelScope.launch {
             _uiState.update { it.copy(loading = true) }
-            val result = runCatching { repository.appointments() }
+            val result = runCatching {
+                withContext(Dispatchers.IO) {
+                    repository.appointments()
+                }
+            }
             result.onSuccess { appointments ->
                 _uiState.update { it.copy(appointments = appointments, loading = false) }
             }.onFailure { error ->
@@ -73,6 +81,14 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
     fun logout() {
         repository.logout()
         _uiState.value = UiState()
+    }
+
+    suspend fun getAppointmentStatistics(): com.dentconnect.mobile.data.AppointmentStats? {
+        return try {
+            backgroundProcessor.calculateStatistics(_uiState.value.appointments)
+        } catch (e: Exception) {
+            null
+        }
     }
 }
 

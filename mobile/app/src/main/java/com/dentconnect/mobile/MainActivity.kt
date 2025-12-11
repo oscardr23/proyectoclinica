@@ -3,6 +3,7 @@ package com.dentconnect.mobile
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
+import androidx.core.view.WindowCompat
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -38,6 +39,8 @@ import java.util.*
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        WindowCompat.setDecorFitsSystemWindows(window, false)
+        window.statusBarColor = android.graphics.Color.TRANSPARENT
         setContent {
             DentConnectTheme {
                 val context = LocalContext.current
@@ -86,6 +89,7 @@ fun MainScreen(
     var currentScreen by remember { mutableStateOf(Screen.APPOINTMENTS) }
     
     Scaffold(
+        topBar = {},
         bottomBar = {
             BottomNavigationBar(
                 currentScreen = currentScreen,
@@ -476,7 +480,7 @@ fun AppointmentsScreen(
             ) {
                 item {
                     Text(
-                        text = "📅 Próximas Citas",
+                        text = "Próximas Citas",
                         style = MaterialTheme.typography.titleMedium,
                         fontWeight = FontWeight.Bold,
                         color = TextPrimary,

@@ -114,8 +114,8 @@ class PatientSerializer(serializers.ModelSerializer):
                 'document_id': validated_data.pop('document_id', ''),
                 'role': User.Roles.PATIENT,
             }
-            # Generar contraseña temporal si no se proporciona
-            password = validated_data.pop('password', None) or User.objects.make_random_password()
+            # Usar contraseña por defecto "1234" si no se proporciona
+            password = validated_data.pop('password', None) or '1234'
             user = User.objects.create_user(password=password, **user_data)
             validated_data['user'] = user
         elif 'user_id' not in validated_data:

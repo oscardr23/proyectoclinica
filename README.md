@@ -20,7 +20,7 @@ source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_data  # Cargar datos de ejemplo (opcional)
-python manage.py runserver
+python manage.py runserver 0.0.0.0:8000
 ```
 
 **En Windows (PowerShell):**
@@ -31,7 +31,7 @@ python -m venv .venv
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_data  # Cargar datos de ejemplo (opcional)
-python manage.py runserver
+python manage.py runserver 0.0.0.0:8000
 ```
 
 **Nota para Windows:** Si PowerShell muestra un error de política de ejecución, ejecuta primero:
@@ -41,8 +41,38 @@ Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
 
 ### Frontend web
 
-cd ../web
+```bash
+cd web
 npm install
 npm start
+```
 
-El backend expone `http://localhost:8000/api/` y la web se conecta por defecto al mismo host (`environment.ts`). La app móvil apunta a `http://10.0.2.2:8000/api`.
+La aplicación web estará disponible en `http://localhost:4200` y se conectará al backend en `http://localhost:8000/api/`.
+
+### App móvil Android
+
+**Compilar el APK:**
+
+1. Abre el proyecto `mobile` en Android Studio
+2. Ve a **Build → Build Bundle(s) / APK(s) → Build APK(s)**
+3. El APK se generará en `mobile/app/build/outputs/apk/debug/app-debug.apk`
+
+**Configurar la URL de la API para dispositivo físico:**
+
+Antes de compilar, actualiza la IP en `mobile/app/build.gradle.kts` con la IP local de tu ordenador:
+
+```kotlin
+buildConfigField("String", "API_URL", "\"http://TU_IP_LOCAL:8000/api/\"")
+```
+
+Para obtener tu IP local:
+- **Windows:** `ipconfig` (busca "Dirección IPv4")
+- **Linux/Mac:** `ifconfig` o `ip addr`
+
+**Instalar en tu móvil:**
+
+1. Transfiere el APK a tu móvil (USB, email, Drive, etc.)
+2. En tu móvil, ve a **Configuración → Seguridad** y activa **"Instalar aplicaciones desde fuentes desconocidas"**
+3. Abre el APK desde el explorador de archivos y sigue las instrucciones
+4. **Importante:** Asegúrate de que tu móvil esté en la misma red WiFi que tu ordenador
+

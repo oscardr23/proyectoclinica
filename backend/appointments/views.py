@@ -39,7 +39,12 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         # Filtrado por rol
         if user.role == user.Roles.PATIENT:
             return queryset.filter(patient__user=user)
-        # PROFESSIONAL y ADMIN ven todas las citas para poder detectar conflictos
+        elif user.role == user.Roles.PROFESSIONAL:
+            # Profesionales solo ven sus propias citas
+            professional_profile = getattr(user, 'professional_profile', None)
+            if professional_profile:
+                return queryset.filter(professional=professional_profile)
+            return queryset.none()
         # ADMIN ve todas las citas
         return queryset
 

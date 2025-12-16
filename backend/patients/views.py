@@ -1,9 +1,10 @@
 from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.exceptions import PermissionDenied
+from rest_framework.exceptions import PermissionDenied, ValidationError
 from rest_framework.response import Response
+from django.utils import timezone
 
-from .models import PatientProfile, ClinicalRecord, Document
+from .models import PatientProfile, ClinicalRecord, Document, EditLock
 from .serializers import PatientSerializer, ClinicalRecordSerializer, DocumentSerializer
 from users.permissions import IsAdmin, IsProfessionalOrAdmin
 
@@ -34,6 +35,36 @@ class PatientViewSet(viewsets.ModelViewSet):
             serializer.save(user=user)
         else:
             serializer.save()
+    
+    def update(self, request, *args, **kwargs):
+        """Sobrescribir update para desbloquear después de actualizar"""
+        response = super().update(request, *args, **kwargs)
+        
+        # Desbloquear el paciente después de una actualización exitosa
+        if response.status_code == status.HTTP_200_OK:
+            patient = self.get_object()
+            try:
+                lock = EditLock.objects.get(patient=patient, locked_by=request.user)
+                lock.delete()
+            except EditLock.DoesNotExist:
+                pass
+        
+        return response
+    
+    def partial_update(self, request, *args, **kwargs):
+        """Sobrescribir partial_update para desbloquear después de actualizar"""
+        response = super().partial_update(request, *args, **kwargs)
+        
+        # Desbloquear el paciente después de una actualización exitosa
+        if response.status_code == status.HTTP_200_OK:
+            patient = self.get_object()
+            try:
+                lock = EditLock.objects.get(patient=patient, locked_by=request.user)
+                lock.delete()
+            except EditLock.DoesNotExist:
+                pass
+        
+        return response
 
     @action(detail=True, methods=['get'])
     def clinical_history(self, request, pk=None):
@@ -66,6 +97,94 @@ class PatientViewSet(viewsets.ModelViewSet):
         documents = Document.objects.filter(patient=patient).select_related('uploaded_by')
         serializer = DocumentSerializer(documents, many=True, context={'request': request})
         return Response(serializer.data)
+    
+    @action(detail=True, methods=['post'])
+    def lock(self, request, pk=None):
+        """Bloquear un paciente para edición"""
+        patient = self.get_object()
+        user = request.user
+        
+        # Solo profesionales y admins pueden bloquear
+        if not (user.is_professional() or user.is_admin()):
+            raise PermissionDenied('Solo los profesionales pueden bloquear pacientes para edición.')
+        
+        # Limpiar bloqueos expirados primero
+        EditLock.cleanup_expired()
+        
+        # Intentar crear o actualizar el bloqueo
+        try:
+            lock = EditLock.objects.get(patient=patient)
+            if lock.is_valid() and lock.locked_by != user:
+                return Response({
+                    'error': f'El paciente está siendo editado por {lock.locked_by.get_full_name() or lock.locked_by.username}',
+                    'locked_by': lock.locked_by.get_full_name() or lock.locked_by.username,
+                    'locked_by_id': lock.locked_by.id,
+                    'locked_at': lock.locked_at.isoformat(),
+                    'expires_at': lock.expires_at.isoformat(),
+                }, status=status.HTTP_409_CONFLICT)
+            elif lock.is_valid() and lock.locked_by == user:
+                # Extender el bloqueo existente
+                lock.extend(minutes=15)
+        except EditLock.DoesNotExist:
+            # Crear nuevo bloqueo
+            lock = EditLock.create_or_update(patient, user, minutes=15)
+        
+        return Response({
+            'message': 'Paciente bloqueado para edición',
+            'locked_by': user.get_full_name() or user.username,
+            'locked_at': lock.locked_at.isoformat(),
+            'expires_at': lock.expires_at.isoformat(),
+        }, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['post'])
+    def unlock(self, request, pk=None):
+        """Desbloquear un paciente"""
+        patient = self.get_object()
+        user = request.user
+        
+        try:
+            lock = EditLock.objects.get(patient=patient)
+            # Solo el usuario que bloqueó o un admin puede desbloquear
+            if lock.locked_by != user and not user.is_admin():
+                raise PermissionDenied('Solo el usuario que bloqueó el paciente o un administrador puede desbloquearlo.')
+            lock.delete()
+            return Response({
+                'message': 'Paciente desbloqueado',
+            }, status=status.HTTP_200_OK)
+        except EditLock.DoesNotExist:
+            return Response({
+                'message': 'El paciente no está bloqueado',
+            }, status=status.HTTP_200_OK)
+    
+    @action(detail=True, methods=['get'])
+    def lock_status(self, request, pk=None):
+        """Obtener el estado del bloqueo de un paciente"""
+        patient = self.get_object()
+        
+        # Limpiar bloqueos expirados primero
+        EditLock.cleanup_expired()
+        
+        try:
+            lock = EditLock.objects.get(patient=patient)
+            if lock.is_valid():
+                return Response({
+                    'is_locked': True,
+                    'locked_by': lock.locked_by.get_full_name() or lock.locked_by.username,
+                    'locked_by_id': lock.locked_by.id,
+                    'locked_at': lock.locked_at.isoformat(),
+                    'expires_at': lock.expires_at.isoformat(),
+                    'is_current_user': lock.locked_by == request.user,
+                })
+            else:
+                # Bloqueo expirado, eliminarlo
+                lock.delete()
+                return Response({
+                    'is_locked': False,
+                })
+        except EditLock.DoesNotExist:
+            return Response({
+                'is_locked': False,
+            })
 
 
 class ClinicalRecordViewSet(viewsets.ModelViewSet):

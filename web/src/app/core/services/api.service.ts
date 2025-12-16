@@ -33,6 +33,19 @@ export class ApiService {
     return this.http.patch<PatientProfile>(`${this.baseUrl}/patients/${id}/`, payload);
   }
 
+  // Métodos para control de concurrencia
+  lockPatient(id: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/patients/${id}/lock/`, {});
+  }
+
+  unlockPatient(id: number): Observable<any> {
+    return this.http.post(`${this.baseUrl}/patients/${id}/unlock/`, {});
+  }
+
+  getPatientLockStatus(id: number): Observable<any> {
+    return this.http.get(`${this.baseUrl}/patients/${id}/lock_status/`);
+  }
+
   deletePatient(id: number): Observable<void> {
     return this.http.delete<void>(`${this.baseUrl}/patients/${id}/`);
   }

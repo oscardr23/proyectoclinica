@@ -279,7 +279,7 @@ import { AuthService } from '../../core/services/auth.service';
             class="appointment"
             [class.urgent]="apt.status === 'URGENT'"
             [class.pending]="apt.status === 'PENDING'"
-            [class.other-professional]="isProfessional() && currentProfessionalId !== null && apt.professional?.id !== currentProfessionalId"
+            [class.other-professional]="isProfessional() && currentProfessionalId !== null && apt.professional?.id !== null && apt.professional?.id !== currentProfessionalId"
             (click)="selectAppointment(apt)"
           >
             {{ formatTime(apt.start_time) }} - {{ apt.professional?.user?.first_name || 'Sin asignar' }}
@@ -1200,9 +1200,21 @@ export class AppointmentsComponent implements OnInit {
       if (this.isProfessional()) {
         const currentUser = this.auth.getCurrentUser();
         if (currentUser) {
-          const currentPro = pros.find(p => p.user.id === currentUser.id);
+          // Buscar el profesional por ID de usuario
+          const currentPro = pros.find(p => p.user && p.user.id === currentUser.id);
           if (currentPro) {
             this.currentProfessionalId = currentPro.id;
+          } else {
+            // Si no se encuentra, intentar buscar por username o email como fallback
+            const currentProByUsername = pros.find(p => 
+              p.user && (
+                p.user.username === currentUser.username || 
+                p.user.email === currentUser.email
+              )
+            );
+            if (currentProByUsername) {
+              this.currentProfessionalId = currentProByUsername.id;
+            }
           }
         }
       }

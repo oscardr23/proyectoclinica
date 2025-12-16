@@ -20,6 +20,8 @@ export interface PatientProfile {
   medical_notes?: string;
   emergency_contact?: string;
   insurance_provider?: string;
+  created_at?: string;
+  updated_at?: string;
 }
 
 export interface ProfessionalProfile {

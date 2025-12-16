@@ -1,5 +1,7 @@
 from django.conf import settings
 from django.db import models
+from django.utils import timezone
+from datetime import timedelta
 
 
 class PatientProfile(models.Model):
@@ -88,3 +90,64 @@ class Document(models.Model):
 
     def __str__(self) -> str:
         return f"{self.title} - {self.patient}"
+
+
+class EditLock(models.Model):
+    """Modelo para rastrear quién está editando un paciente en tiempo real"""
+    patient = models.OneToOneField(
+        PatientProfile,
+        on_delete=models.CASCADE,
+        related_name='edit_lock',
+    )
+    locked_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.CASCADE,
+        related_name='patient_locks',
+    )
+    locked_at = models.DateTimeField(auto_now_add=True)
+    expires_at = models.DateTimeField()
+    
+    class Meta:
+        ordering = ['-locked_at']
+        indexes = [
+            models.Index(fields=['patient', 'expires_at']),
+        ]
+    
+    def __str__(self) -> str:
+        return f"Bloqueo de {self.patient} por {self.locked_by.get_full_name()}"
+    
+    def is_expired(self) -> bool:
+        """Verificar si el bloqueo ha expirado"""
+        return timezone.now() > self.expires_at
+    
+    def is_valid(self) -> bool:
+        """Verificar si el bloqueo es válido (no expirado)"""
+        return not self.is_expired()
+    
+    def extend(self, minutes=15):
+        """Extender el tiempo de bloqueo"""
+        self.expires_at = timezone.now() + timedelta(minutes=minutes)
+        self.save(update_fields=['expires_at'])
+    
+    @classmethod
+    def create_or_update(cls, patient, user, minutes=15):
+        """Crear o actualizar un bloqueo"""
+        lock, created = cls.objects.get_or_create(
+            patient=patient,
+            defaults={
+                'locked_by': user,
+                'expires_at': timezone.now() + timedelta(minutes=minutes),
+            }
+        )
+        if not created:
+            # Si ya existe, actualizar si es del mismo usuario o si expiró
+            if lock.locked_by == user or lock.is_expired():
+                lock.locked_by = user
+                lock.expires_at = timezone.now() + timedelta(minutes=minutes)
+                lock.save(update_fields=['locked_by', 'expires_at'])
+        return lock
+    
+    @classmethod
+    def cleanup_expired(cls):
+        """Eliminar bloqueos expirados"""
+        cls.objects.filter(expires_at__lt=timezone.now()).delete()

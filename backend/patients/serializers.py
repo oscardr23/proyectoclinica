@@ -1,9 +1,11 @@
 import re
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ValidationError
+from django.utils import timezone
 from rest_framework import serializers
+from rest_framework.exceptions import ValidationError as DRFValidationError
 
-from .models import PatientProfile, ClinicalRecord, Document
+from .models import PatientProfile, ClinicalRecord, Document, EditLock
 from users.serializers import UserSerializer
 
 User = get_user_model()
@@ -80,6 +82,9 @@ class PatientSerializer(serializers.ModelSerializer):
                 raise serializers.ValidationError('La fecha de nacimiento no puede ser anterior a 1900')
         return value
 
+    # Campo para optimistic locking
+    _updated_at = serializers.DateTimeField(write_only=True, required=False, help_text="Timestamp de última actualización para control de concurrencia")
+    
     class Meta:
         model = PatientProfile
         fields = [
@@ -98,6 +103,7 @@ class PatientSerializer(serializers.ModelSerializer):
             'insurance_provider',
             'created_at',
             'updated_at',
+            '_updated_at',
         ]
         read_only_fields = ('created_at', 'updated_at')
 
@@ -124,6 +130,37 @@ class PatientSerializer(serializers.ModelSerializer):
         return super().create(validated_data)
 
     def update(self, instance, validated_data):
+        # Validar optimistic locking si se proporciona _updated_at
+        updated_at_timestamp = validated_data.pop('_updated_at', None)
+        if updated_at_timestamp:
+            # Convertir a datetime si es string
+            if isinstance(updated_at_timestamp, str):
+                from django.utils.dateparse import parse_datetime
+                updated_at_timestamp = parse_datetime(updated_at_timestamp)
+            
+            # Verificar si el registro fue modificado desde que se cargó
+            if instance.updated_at and updated_at_timestamp:
+                # Comparar timestamps (con margen de 1 segundo para diferencias de precisión)
+                time_diff = abs((instance.updated_at - updated_at_timestamp).total_seconds())
+                if time_diff > 1:
+                    raise DRFValidationError({
+                        'error': 'El registro ha sido modificado por otro usuario. Por favor, recarga la página y vuelve a intentarlo.',
+                        'current_updated_at': instance.updated_at.isoformat(),
+                        'provided_updated_at': updated_at_timestamp.isoformat() if hasattr(updated_at_timestamp, 'isoformat') else str(updated_at_timestamp),
+                    })
+        
+        # Verificar si hay un bloqueo activo de otro usuario
+        try:
+            lock = EditLock.objects.get(patient=instance)
+            if lock.is_valid() and lock.locked_by != self.context['request'].user:
+                raise DRFValidationError({
+                    'error': f'El paciente está siendo editado por {lock.locked_by.get_full_name() or lock.locked_by.username}. Por favor, espera a que termine.',
+                    'locked_by': lock.locked_by.get_full_name() or lock.locked_by.username,
+                    'locked_at': lock.locked_at.isoformat(),
+                })
+        except EditLock.DoesNotExist:
+            pass
+        
         # Extraer campos del usuario si están presentes
         user_data = {}
         if 'phone' in validated_data:
@@ -144,7 +181,12 @@ class PatientSerializer(serializers.ModelSerializer):
             instance.user.save()
         
         # Actualizar el perfil del paciente
-        return super().update(instance, validated_data)
+        result = super().update(instance, validated_data)
+        
+        # Limpiar bloqueos expirados después de actualizar
+        EditLock.cleanup_expired()
+        
+        return result
 
 
 class ClinicalRecordSerializer(serializers.ModelSerializer):

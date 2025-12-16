@@ -10,17 +10,37 @@
 
 ## Puesta en marcha rápida
 
+### Backend
+
+**En Linux/Mac:**
 ```bash
-# Backend
 cd backend
-python3 -m venv .venv
+python -m venv .venv
 source .venv/bin/activate
 pip install -r requirements.txt
 python manage.py migrate
 python manage.py seed_data  # Cargar datos de ejemplo (opcional)
 python manage.py runserver
+```
 
-# Frontend web
+**En Windows (PowerShell):**
+```powershell
+cd backend
+python -m venv .venv
+.\.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python manage.py migrate
+python manage.py seed_data  # Cargar datos de ejemplo (opcional)
+python manage.py runserver
+```
+
+**Nota para Windows:** Si PowerShell muestra un error de política de ejecución, ejecuta primero:
+```powershell
+Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser
+```
+
+### Frontend web
+
 cd ../web
 npm install
 npm start

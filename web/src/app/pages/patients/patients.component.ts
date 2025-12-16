@@ -1,6 +1,7 @@
 import { CommonModule } from '@angular/common';
-import { Component, inject, OnInit } from '@angular/core';
+import { Component, inject, OnInit, OnDestroy } from '@angular/core';
 import { FormsModule } from '@angular/forms';
+import { interval, Subscription } from 'rxjs';
 
 import { PatientProfile, Budget } from '../../core/models';
 import { ApiService } from '../../core/services/api.service';
@@ -117,6 +118,11 @@ import { AuthService } from '../../core/services/auth.service';
         </div>
 
         <div class="tab-content">
+          <!-- Advertencia de bloqueo -->
+          <div *ngIf="isLockedByOther && selectedPatient" class="lock-warning" style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 5px; padding: 1rem; margin-bottom: 1rem; color: #856404;">
+            <strong>⚠️ Advertencia:</strong> El paciente está siendo editado por <strong>{{ lockedByUser }}</strong>. Los cambios no se guardarán hasta que termine.
+          </div>
+          
           <div *ngIf="activeTab === 'data'" class="form-section">
             <div class="form-grid">
               <div class="form-group">
@@ -151,7 +157,7 @@ import { AuthService } from '../../core/services/auth.service';
             <div style="text-align: right; margin-top: 1rem;">
               <button class="btn btn-secondary" (click)="goBackToList()" style="margin-right: 0.5rem;">Volver</button>
               <button *ngIf="isAdmin()" class="btn btn-danger" (click)="confirmDeletePatient()" style="margin-right: 0.5rem;">Eliminar Paciente</button>
-              <button class="btn btn-primary" (click)="savePatient()">Guardar Cambios</button>
+              <button class="btn btn-primary" (click)="savePatient()" [disabled]="isLockedByOther">Guardar Cambios</button>
             </div>
           </div>
 
@@ -636,7 +642,7 @@ import { AuthService } from '../../core/services/auth.service';
     `,
   ],
 })
-export class PatientsComponent implements OnInit {
+export class PatientsComponent implements OnInit, OnDestroy {
   private readonly api = inject(ApiService);
   private readonly auth = inject(AuthService);
   
@@ -648,7 +654,8 @@ export class PatientsComponent implements OnInit {
     document_id?: string; 
     phone?: string; 
     email?: string; 
-    allergies?: string 
+    allergies?: string;
+    updated_at?: string;
   } | null = null;
   activeTab = 'data';
   searchTerm = '';
@@ -657,6 +664,12 @@ export class PatientsComponent implements OnInit {
   creating = false;
   patientHistory: any[] = [];
   patientBudgets: Budget[] = [];
+  
+  // Control de concurrencia
+  lockStatus: any = null;
+  lockCheckInterval: Subscription | null = null;
+  isLockedByOther = false;
+  lockedByUser: string | null = null;
   
   // Modal states
   showModal = false;
@@ -680,6 +693,16 @@ export class PatientsComponent implements OnInit {
     this.api.getPatients().subscribe((patients) => (this.patients = patients));
   }
 
+  ngOnDestroy() {
+    // Limpiar suscripciones y desbloquear al salir
+    if (this.lockCheckInterval) {
+      this.lockCheckInterval.unsubscribe();
+    }
+    if (this.selectedPatient) {
+      this.unlockPatient();
+    }
+  }
+
   get filteredPatients(): PatientProfile[] {
     if (!this.searchTerm) return this.patients;
     const term = this.searchTerm.toLowerCase();
@@ -690,10 +713,15 @@ export class PatientsComponent implements OnInit {
   }
 
   selectPatient(patient: PatientProfile) {
+    // Desbloquear paciente anterior si existe
+    if (this.selectedPatient) {
+      this.unlockPatient();
+    }
+    
     // Crear una copia profunda del paciente para evitar modificar el original directamente
     this.selectedPatient = JSON.parse(JSON.stringify(patient));
     this.activeTab = 'data';
-    // Guardar los valores originales para detectar cambios
+    // Guardar los valores originales para detectar cambios, incluyendo updated_at
     this.originalPatientData = {
       first_name: patient.user.first_name || '',
       last_name: patient.user.last_name || '',
@@ -701,9 +729,17 @@ export class PatientsComponent implements OnInit {
       phone: patient.user.phone || '',
       email: patient.user.email || '',
       allergies: patient.allergies || '',
+      updated_at: patient.updated_at || '',
     };
+    
+    // Bloquear el paciente para edición
+    this.lockPatient(patient.id);
+    
     // Cargar historial y presupuestos del paciente
     this.loadPatientData(patient.id);
+    
+    // Iniciar verificación periódica del estado del bloqueo
+    this.startLockStatusCheck(patient.id);
   }
 
   loadPatientData(patientId: number) {
@@ -959,14 +995,33 @@ export class PatientsComponent implements OnInit {
       this.modalCallback = null;
     } else {
       // No hay cambios, volver directamente
-      this.selectedPatient = null;
-      this.originalPatientData = null;
-      this.activeTab = 'data';
+      this.unlockAndReturn();
     }
+  }
+
+  unlockAndReturn() {
+    this.unlockPatient();
+    this.selectedPatient = null;
+    this.originalPatientData = null;
+    this.activeTab = 'data';
+    this.isLockedByOther = false;
+    this.lockedByUser = null;
   }
 
   savePatientAndReturn() {
     if (!this.selectedPatient) return;
+    
+    // Verificar si está bloqueado por otro usuario
+    if (this.isLockedByOther) {
+      this.closeModal();
+      this.showModal = true;
+      this.modalType = 'error';
+      this.modalTitle = 'Error';
+      this.modalMessage = `El paciente está siendo editado por ${this.lockedByUser}. Por favor, espera a que termine.`;
+      this.modalCallback = null;
+      return;
+    }
+    
     const payload: any = {
       first_name: this.selectedPatient.user.first_name || '',
       last_name: this.selectedPatient.user.last_name || '',
@@ -974,7 +1029,9 @@ export class PatientsComponent implements OnInit {
       phone: this.selectedPatient.user.phone || '',
       email: this.selectedPatient.user.email || '',
       allergies: this.selectedPatient.allergies || '',
+      _updated_at: this.originalPatientData?.updated_at || this.selectedPatient.updated_at || '',
     };
+    
     this.api.updatePatient(this.selectedPatient.id, payload).subscribe({
       next: (updated) => {
         // Actualizar en la lista
@@ -982,10 +1039,8 @@ export class PatientsComponent implements OnInit {
         if (index !== -1) {
           this.patients[index] = updated;
         }
-        // Volver a la lista
-        this.selectedPatient = null;
-        this.originalPatientData = null;
-        this.activeTab = 'data';
+        // Desbloquear y volver a la lista
+        this.unlockAndReturn();
         // Cerrar el modal de confirmación
         this.closeModal();
         // Mostrar mensaje de éxito
@@ -998,7 +1053,11 @@ export class PatientsComponent implements OnInit {
       error: (err) => {
         console.error('Error al guardar paciente:', err);
         let errorMessage = 'Error al guardar los cambios.';
-        if (err.error && typeof err.error === 'object') {
+        
+        // Manejar errores de concurrencia
+        if (err.error?.error) {
+          errorMessage = err.error.error;
+        } else if (err.error && typeof err.error === 'object') {
           const errorKeys = Object.keys(err.error);
           if (errorKeys.length > 0) {
             const firstError = err.error[errorKeys[0]];
@@ -1021,6 +1080,17 @@ export class PatientsComponent implements OnInit {
 
   savePatient() {
     if (!this.selectedPatient) return;
+    
+    // Verificar si está bloqueado por otro usuario
+    if (this.isLockedByOther) {
+      this.showModal = true;
+      this.modalType = 'error';
+      this.modalTitle = 'Error';
+      this.modalMessage = `El paciente está siendo editado por ${this.lockedByUser}. Por favor, espera a que termine.`;
+      this.modalCallback = null;
+      return;
+    }
+    
     const payload: any = {
       first_name: this.selectedPatient.user.first_name || '',
       last_name: this.selectedPatient.user.last_name || '',
@@ -1028,7 +1098,9 @@ export class PatientsComponent implements OnInit {
       phone: this.selectedPatient.user.phone || '',
       email: this.selectedPatient.user.email || '',
       allergies: this.selectedPatient.allergies || '',
+      _updated_at: this.originalPatientData?.updated_at || this.selectedPatient.updated_at || '',
     };
+    
     this.api.updatePatient(this.selectedPatient.id, payload).subscribe({
       next: (updated) => {
         // Actualizar en la lista
@@ -1036,10 +1108,8 @@ export class PatientsComponent implements OnInit {
         if (index !== -1) {
           this.patients[index] = updated;
         }
-        // Volver a la lista automáticamente después de guardar
-        this.selectedPatient = null;
-        this.originalPatientData = null;
-        this.activeTab = 'data';
+        // Desbloquear y volver a la lista automáticamente después de guardar
+        this.unlockAndReturn();
         // Mostrar mensaje de éxito
         this.showModal = true;
         this.modalType = 'success';
@@ -1050,7 +1120,23 @@ export class PatientsComponent implements OnInit {
       error: (err) => {
         console.error('Error al guardar paciente:', err);
         let errorMessage = 'Error al guardar los cambios.';
-        if (err.error && typeof err.error === 'object') {
+        
+        // Manejar errores de concurrencia
+        if (err.error?.error) {
+          errorMessage = err.error.error;
+          // Si es un error de concurrencia, recargar el paciente
+          if (err.error.error.includes('modificado por otro usuario') || 
+              err.error.error.includes('siendo editado')) {
+            this.loadPatientData(this.selectedPatient!.id);
+            this.api.getPatients().subscribe((patients) => {
+              this.patients = patients;
+              const updated = patients.find(p => p.id === this.selectedPatient!.id);
+              if (updated) {
+                this.selectPatient(updated);
+              }
+            });
+          }
+        } else if (err.error && typeof err.error === 'object') {
           const errorKeys = Object.keys(err.error);
           if (errorKeys.length > 0) {
             const firstError = err.error[errorKeys[0]];
@@ -1061,6 +1147,7 @@ export class PatientsComponent implements OnInit {
             }
           }
         }
+        
         this.showModal = true;
         this.modalType = 'error';
         this.modalTitle = 'Error';
@@ -1165,9 +1252,7 @@ export class PatientsComponent implements OnInit {
       // Cerrar modal y volver a la lista sin guardar cambios
       // Los cambios en selectedPatient se descartan automáticamente al volver a seleccionar
       this.closeModal();
-      this.selectedPatient = null;
-      this.originalPatientData = null;
-      this.activeTab = 'data';
+      this.unlockAndReturn();
     } else {
       // Para otros modales, simplemente cancelar
       this.closeModal();
@@ -1182,5 +1267,75 @@ export class PatientsComponent implements OnInit {
   cancelModal() {
     // Método legacy - usar handleNoClick en su lugar
     this.handleNoClick();
+  }
+
+  // Métodos para control de concurrencia
+  lockPatient(patientId: number) {
+    this.api.lockPatient(patientId).subscribe({
+      next: (response) => {
+        this.lockStatus = response;
+        this.isLockedByOther = false;
+      },
+      error: (err) => {
+        console.error('Error al bloquear paciente:', err);
+        if (err.status === 409) {
+          // Conflicto: otro usuario ya está editando
+          this.isLockedByOther = true;
+          this.lockedByUser = err.error?.locked_by || 'Otro usuario';
+          this.showModal = true;
+          this.modalType = 'error';
+          this.modalTitle = 'Paciente en edición';
+          this.modalMessage = `El paciente está siendo editado por ${this.lockedByUser}. Por favor, espera a que termine.`;
+          this.modalCallback = null;
+        }
+      }
+    });
+  }
+
+  unlockPatient() {
+    if (!this.selectedPatient) return;
+    
+    // Detener verificación periódica
+    if (this.lockCheckInterval) {
+      this.lockCheckInterval.unsubscribe();
+      this.lockCheckInterval = null;
+    }
+    
+    this.api.unlockPatient(this.selectedPatient.id).subscribe({
+      next: () => {
+        this.lockStatus = null;
+        this.isLockedByOther = false;
+        this.lockedByUser = null;
+      },
+      error: (err) => {
+        console.error('Error al desbloquear paciente:', err);
+      }
+    });
+  }
+
+  startLockStatusCheck(patientId: number) {
+    // Verificar el estado del bloqueo cada 5 segundos
+    this.lockCheckInterval = interval(5000).subscribe(() => {
+      this.checkLockStatus(patientId);
+    });
+  }
+
+  checkLockStatus(patientId: number) {
+    this.api.getPatientLockStatus(patientId).subscribe({
+      next: (status) => {
+        if (status.is_locked && !status.is_current_user) {
+          // Otro usuario está editando
+          this.isLockedByOther = true;
+          this.lockedByUser = status.locked_by;
+        } else {
+          this.isLockedByOther = false;
+          this.lockedByUser = null;
+        }
+        this.lockStatus = status;
+      },
+      error: (err) => {
+        console.error('Error al verificar estado del bloqueo:', err);
+      }
+    });
   }
 }

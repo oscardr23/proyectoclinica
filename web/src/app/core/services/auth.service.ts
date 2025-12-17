@@ -94,5 +94,26 @@ export class AuthService {
     localStorage.setItem(this.accessTokenKey, tokens.access);
     localStorage.setItem(this.refreshTokenKey, tokens.refresh);
   }
+
+  getRefreshToken(): string | null {
+    return localStorage.getItem(this.refreshTokenKey);
+  }
+
+  refreshToken(): Observable<TokenResponse> {
+    const refreshToken = this.getRefreshToken();
+    if (!refreshToken) {
+      throw new Error('No hay token de refresco disponible');
+    }
+    return this.http.post<TokenResponse>(`${this.baseUrl}/auth/refresh/`, {
+      refresh: refreshToken,
+    }).pipe(
+      tap((tokens) => {
+        if (!tokens?.access) {
+          throw new Error('No se recibió el token de acceso');
+        }
+        this.persistTokens(tokens);
+      }),
+    );
+  }
 }
 

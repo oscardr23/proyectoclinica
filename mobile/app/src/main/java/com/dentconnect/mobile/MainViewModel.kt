@@ -38,7 +38,15 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
             try {
                 val (user, appointments) = repository.loadUserAndAppointments()
                 if (user != null) {
-                    _uiState.update { it.copy(user = user, appointments = appointments) }
+                    // Si es profesional, filtrar solo sus citas
+                    val filteredAppointments = if (user.role == "PROFESSIONAL") {
+                        appointments.filter { appointment ->
+                            appointment.professional.user.id == user.id
+                        }
+                    } else {
+                        appointments
+                    }
+                    _uiState.update { it.copy(user = user, appointments = filteredAppointments) }
                 }
             } catch (e: Exception) {
                 _uiState.update { it.copy(user = null) }
@@ -71,7 +79,16 @@ class MainViewModel(application: Application) : AndroidViewModel(application) {
                 }
             }
             result.onSuccess { appointments ->
-                _uiState.update { it.copy(appointments = appointments, loading = false) }
+                val currentUser = _uiState.value.user
+                // Si es profesional, filtrar solo sus citas
+                val filteredAppointments = if (currentUser?.role == "PROFESSIONAL") {
+                    appointments.filter { appointment ->
+                        appointment.professional.user.id == currentUser.id
+                    }
+                } else {
+                    appointments
+                }
+                _uiState.update { it.copy(appointments = filteredAppointments, loading = false) }
             }.onFailure { error ->
                 _uiState.update { it.copy(loading = false, error = error.message) }
             }
